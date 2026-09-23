@@ -3,7 +3,13 @@
 
 import { loadData, groupWants } from "./data.js";
 
-const REPO_URL = "https://github.com/asciivader/vinyl-hunt-list";
+// On GitHub Pages (<user>.github.io/<repo>/) link to the repo the site was
+// built from, so copies of this project link to themselves.
+const REPO_URL = (() => {
+  const user = location.hostname.match(/^([\w-]+)\.github\.io$/)?.[1];
+  const repo = location.pathname.split("/")[1];
+  return user && repo ? `https://github.com/${user}/${repo}` : "https://github.com/asciivader/vinyl-hunt-list";
+})();
 
 const state = {
   wants: [],

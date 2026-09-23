@@ -1,0 +1,24 @@
+name: Close outside pull requests
+
+# Only the owner changes this repo. Pull requests from forks are closed with
+# a pointer to making your own copy instead. This runs with the base repo's
+# permissions but never checks out or runs code from the pull request.
+
+on:
+  pull_request_target:
+    types: [opened, reopened]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  close:
+    if: github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Close with a note
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          gh pr close "$PR_URL" --comment "Thanks, but this list is personal and doesn't take outside changes. You're welcome to fork it and make your own version: see \"Make your own\" in the README."

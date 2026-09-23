@@ -35,18 +35,18 @@ Edit the CSVs directly and keep them valid CSV (quote fields containing
 commas or quotes). Don't reorder or reformat rows you aren't changing, so
 diffs stay reviewable.
 
-## Proposing changes (contributors)
+## Who changes this repo
 
-Changes go through pull requests that the owner reviews. If you are not the owner:
+Only the owner (asciivader) changes this repo. Pull requests from forks are
+closed automatically (`.github/workflows/close-outside-prs.yml`). If you are
+not the owner:
 
-1. Work on a new branch (fork the repo first if you can't push to it).
-2. Change only what was asked, usually `data/wants.csv`. Suggest additions to
-   the want list; don't edit `collection.csv` unless the owner asked you to.
-3. Run `npm run validate` and `npm test`; both must pass.
-4. Open a pull request that lists each record added or removed and why
-   (e.g. "suggested by Sam: has Big Star's best songs").
+- Don't open pull requests or issues against this repo.
+- To make your own version, fork it and change `data/` in the fork (see
+  "Make your own" in README.md). Everything else works unchanged.
 
-The `Check data` workflow runs the same checks on every pull request.
+When working for the owner, run `npm run validate` and `npm test` before
+committing; both must pass. The `Check data` workflow runs them on every push.
 
 ## The printed sheet
 

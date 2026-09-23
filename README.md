@@ -48,11 +48,24 @@ Every change to `main` is checked (`npm run validate`) and then published.
 ## Who can change what
 
 - **Anyone with the link** can view the site, and nothing more.
-- **Only people with write access to this repo** (me, plus anyone I add as a
-  collaborator) can change the lists.
-- **Anyone else**, if the repo is public, can only *suggest* a change by opening
-  a pull request, and nothing changes until I merge it. Their Claude Code
-  follows [CLAUDE.md](CLAUDE.md) to do this properly.
+- **Only I change this repo.** It has no collaborators, so nobody else can
+  push. The site is built only from my pushes to `main`.
+- **Pull requests from anyone else are closed automatically**, so nothing from
+  outside can end up in the lists. Anyone is welcome to copy the whole thing
+  and make their own; see below.
+
+## Make your own
+
+Want your own version? It's free and needs nothing installed.
+
+1. **Fork** this repo on GitHub (button at the top right).
+2. In your fork, replace `data/wants.csv` and `data/collection.csv` with your
+   records (edit them on github.com, or upload your own CSVs with the same
+   column headers). Adjust the genre sections in `data/layout.json` to match.
+3. Follow [Publishing](#publishing) in your fork. Your site appears at
+   `https://<your-username>.github.io/<repo-name>/`.
+
+Changes in your fork never affect this one.
 
 ## Previewing locally
 
