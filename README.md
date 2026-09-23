@@ -3,8 +3,7 @@
 My record collection, the records I'm hunting for, and a printable one-sheet
 hunt list to take to the shops.
 
-**Site:** https://asciivader.github.io/vinyl-hunt-list/ (once GitHub Pages is
-turned on; see [Publishing](#publishing))
+**Site:** https://asciivader.github.io/vinyl-hunt-list/
 
 - **Want list:** searchable, grouped by genre section.
 - **Collection:** everything I already own, sortable and searchable.
@@ -41,7 +40,13 @@ Any of these gets a change onto the site:
   ```
 
   New records are added to `collection.csv`, ones already there are skipped,
-  and anything now owned comes off `wants.csv`. Then commit and push.
+  and anything now owned comes off `wants.csv`. Then commit and push. Add
+  `--undated` when importing records owned for a long time, so they don't
+  show as "picked up recently".
+
+The collection labels the newest batch of additions (the latest `added`
+date) as **picked up recently**. When a newer batch is added, the label moves
+to it automatically.
 
 Every change to `main` is checked (`npm run validate`) and then published.
 

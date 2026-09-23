@@ -4,6 +4,9 @@
 //
 //   npm run import -- ~/Downloads/discogs-export.csv
 //   npm run import -- records.csv --dry-run     (show what would change)
+//   npm run import -- records.csv --undated     (records owned a long time:
+//        leave "added" empty unless the file has dates, so they don't take
+//        the "picked up recently" label from the latest haul)
 
 import { readFile, writeFile } from "node:fs/promises";
 import { parseCsv, parseCsvObjects, stringifyCsv } from "../src/csv.js";
@@ -11,9 +14,10 @@ import { planImport, recordKey, WANT_COLUMNS, COLLECTION_COLUMNS } from "../src/
 
 const args = process.argv.slice(2);
 const dryRun = args.includes("--dry-run");
+const undated = args.includes("--undated");
 const source = args.find((a) => !a.startsWith("--"));
 if (!source) {
-  console.error("Usage: npm run import -- <file.csv> [--dry-run]");
+  console.error("Usage: npm run import -- <file.csv> [--dry-run] [--undated]");
   process.exit(1);
 }
 
@@ -21,7 +25,7 @@ const dataFile = (name) => new URL(`../data/${name}`, import.meta.url);
 const collection = parseCsvObjects(await readFile(dataFile("collection.csv"), "utf8")).rows;
 const wants = parseCsvObjects(await readFile(dataFile("wants.csv"), "utf8")).rows;
 
-const plan = planImport(parseCsv(await readFile(source, "utf8")), collection);
+const plan = planImport(parseCsv(await readFile(source, "utf8")), collection, { undated });
 if (plan.error) {
   console.error(plan.error);
   process.exit(1);

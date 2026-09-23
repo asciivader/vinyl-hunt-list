@@ -40,6 +40,16 @@ test("planImport reads a Discogs export and skips duplicates", () => {
   assert.equal(nirvana.artist, "Nirvana");
 });
 
+test("planImport dates undated rows today unless undated is set", () => {
+  const csv = parseCsv("artist,title,added\nA,One,2024-05-01\nB,Two,");
+  const [one, two] = planImport(csv, []).fresh;
+  assert.equal(one.added, "2024-05-01");
+  assert.match(two.added, /^\d{4}-\d{2}-\d{2}$/);
+  const [keep, blank] = planImport(csv, [], { undated: true }).fresh;
+  assert.equal(keep.added, "2024-05-01");
+  assert.equal(blank.added, "");
+});
+
 test("planImport needs artist and title columns", () => {
   assert.match(planImport(parseCsv("name,year\nfoo,1999"), []).error, /artist/);
 });

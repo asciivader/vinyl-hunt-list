@@ -106,13 +106,19 @@ function renderCollection() {
     if (b.dataset.sort === key) b.dataset.dir = dir; else delete b.dataset.dir;
   });
 
+  // The newest batch of additions (latest `added` date) is labelled
+  // "picked up recently"; the label moves on when a later batch arrives.
+  const latest = state.collection.reduce((max, r) => (r.added > max ? r.added : max), "");
+
   const body = rows.map((r) => el("tr", {},
     el("td", { class: "artist-cell" }, r.artist),
     el("td", {}, r.title),
     el("td", { class: "muted" }, r.year),
     el("td", { class: "muted" }, r.format),
     el("td", { class: "muted" }, [r.label, r.catalog].filter(Boolean).join(" · ")),
-    el("td", { class: "muted" }, [r.condition, r.notes].filter(Boolean).join(" · ")),
+    el("td", { class: "muted" },
+      latest && r.added === latest && el("span", { class: "recent" }, "picked up recently"),
+      [r.condition, r.notes].filter(Boolean).join(" · ") || null),
     el("td", { class: "muted date" }, r.added),
   ));
   $("#owned-rows").replaceChildren(...(body.length ? body : [el("tr", {}, el("td", { colspan: 7, class: "empty" },

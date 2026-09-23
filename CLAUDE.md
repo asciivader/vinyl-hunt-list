@@ -29,7 +29,14 @@ Common owner requests:
 - "I bought X": remove X from `wants.csv`, add it to `collection.csv` with
   `added` set to today and `format` LP unless told otherwise.
 - "Import this CSV": `npm run import -- <file> --dry-run`, show the owner the
-  summary, then run it without `--dry-run`.
+  summary, then run it without `--dry-run`. For records owned a long time
+  (not a new haul), add `--undated` so they don't get today's date.
+
+"Picked up recently" is not a note: the site shows that label on every
+collection record with the newest `added` date, so it moves to each new batch
+by itself. Never type it into `notes`, and leave `added` empty for records
+whose purchase date isn't known. `notes` is only for facts about the record
+itself (number of copies, which edition).
 
 Edit the CSVs directly and keep them valid CSV (quote fields containing
 commas or quotes). Don't reorder or reformat rows you aren't changing, so

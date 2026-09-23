@@ -57,17 +57,19 @@ export function today() {
   return new Date().toISOString().slice(0, 10);
 }
 
-export function normalizeCollectionRecord(raw) {
+// Rows without an "added" date get today's, unless `undated` (records owned
+// long before the import), which leaves it empty.
+export function normalizeCollectionRecord(raw, { undated = false } = {}) {
   const rec = Object.fromEntries(COLLECTION_COLUMNS.map((c) => [c, String(raw[c] ?? "").trim()]));
   rec.artist = cleanArtist(rec.artist);
   rec.year = yearOf(rec.year);
-  rec.added = dateOf(rec.added) || today();
+  rec.added = dateOf(rec.added) || (undated ? "" : today());
   return rec;
 }
 
 // Turns a parsed CSV (header + rows as arrays) into collection records,
 // flagging rows that are missing artist/title or already in the collection.
-export function planImport(csvRows, collection) {
+export function planImport(csvRows, collection, { undated = false } = {}) {
   const [header = [], ...rows] = csvRows;
   const map = mapColumns(header);
   if (map.artist < 0 || map.title < 0) {
@@ -78,7 +80,7 @@ export function planImport(csvRows, collection) {
   const fresh = [], duplicates = [], skipped = [];
   for (const row of rows) {
     const raw = Object.fromEntries(Object.entries(map).map(([f, i]) => [f, i >= 0 ? row[i] : ""]));
-    const rec = normalizeCollectionRecord(raw);
+    const rec = normalizeCollectionRecord(raw, { undated });
     if (!rec.artist || !rec.title) { skipped.push(rec); continue; }
     const key = recordKey(rec.artist, rec.title);
     if (owned.has(key) || seen.has(key)) duplicates.push(rec);
