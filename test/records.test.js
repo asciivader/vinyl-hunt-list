@@ -40,14 +40,13 @@ test("planImport reads a Discogs export and skips duplicates", () => {
   assert.equal(nirvana.artist, "Nirvana");
 });
 
-test("planImport dates undated rows today unless undated is set", () => {
+test("planImport dates rows (today if missing); undated leaves every date empty", () => {
   const csv = parseCsv("artist,title,added\nA,One,2024-05-01\nB,Two,");
   const [one, two] = planImport(csv, []).fresh;
   assert.equal(one.added, "2024-05-01");
-  assert.match(two.added, /^\d{4}-\d{2}-\d{2}$/);
-  const [keep, blank] = planImport(csv, [], { undated: true }).fresh;
-  assert.equal(keep.added, "2024-05-01");
-  assert.equal(blank.added, "");
+  assert.equal(two.added, new Date().toISOString().slice(0, 10));
+  const undated = planImport(csv, [], { undated: true }).fresh;
+  assert.deepEqual(undated.map((r) => r.added), ["", ""]);
 });
 
 test("planImport needs artist and title columns", () => {

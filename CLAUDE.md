@@ -29,8 +29,12 @@ Common owner requests:
 - "I bought X": remove X from `wants.csv`, add it to `collection.csv` with
   `added` set to today and `format` LP unless told otherwise.
 - "Import this CSV": `npm run import -- <file> --dry-run`, show the owner the
-  summary, then run it without `--dry-run`. For records owned a long time
-  (not a new haul), add `--undated` so they don't get today's date.
+  summary, then run it without `--dry-run`. If the records are ones the owner
+  already had (their existing collection, a Discogs export), add `--undated`
+  so none of them count as "picked up recently". If it's unclear whether a
+  file is a new haul or existing records, ask.
+- "Here are records I already own" (listed in chat, not bought just now):
+  add them to `collection.csv` with `added` left empty.
 
 "Picked up recently" is not a note: the site shows that label on every
 collection record with the newest `added` date, so it moves to each new batch

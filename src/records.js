@@ -57,13 +57,15 @@ export function today() {
   return new Date().toISOString().slice(0, 10);
 }
 
-// Rows without an "added" date get today's, unless `undated` (records owned
-// long before the import), which leaves it empty.
+// Rows without an "added" date get today's. With `undated` (records owned
+// long before the import) "added" is always left empty, ignoring any dates
+// in the file: a Discogs export's "Date Added" is when the record was
+// catalogued, not bought, and would mark it "picked up recently".
 export function normalizeCollectionRecord(raw, { undated = false } = {}) {
   const rec = Object.fromEntries(COLLECTION_COLUMNS.map((c) => [c, String(raw[c] ?? "").trim()]));
   rec.artist = cleanArtist(rec.artist);
   rec.year = yearOf(rec.year);
-  rec.added = dateOf(rec.added) || (undated ? "" : today());
+  rec.added = undated ? "" : dateOf(rec.added) || today();
   return rec;
 }
 

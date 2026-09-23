@@ -5,8 +5,8 @@
 //   npm run import -- ~/Downloads/discogs-export.csv
 //   npm run import -- records.csv --dry-run     (show what would change)
 //   npm run import -- records.csv --undated     (records owned a long time:
-//        leave "added" empty unless the file has dates, so they don't take
-//        the "picked up recently" label from the latest haul)
+//        leave "added" empty, ignoring any dates in the file, so they don't
+//        take the "picked up recently" label from the latest haul)
 
 import { readFile, writeFile } from "node:fs/promises";
 import { parseCsv, parseCsvObjects, stringifyCsv } from "../src/csv.js";
@@ -36,6 +36,17 @@ const keptWants = wants.filter((w) => !incoming.has(recordKey(w.artist, w.title)
 const cleared = wants.filter((w) => incoming.has(recordKey(w.artist, w.title)));
 
 console.log(`Columns: ${plan.mapped.join(", ")}`);
+
+// Warn when this import would become the "picked up recently" batch.
+const newest = (rows) => rows.reduce((max, r) => (r.added > max ? r.added : max), "");
+const importNewest = newest(plan.fresh);
+if (undated) {
+  console.log('Dates: none (--undated), so nothing here will show as "picked up recently".');
+} else if (importNewest && importNewest >= newest(collection)) {
+  const count = plan.fresh.filter((r) => r.added === importNewest).length;
+  console.log(`Heads up: ${count} of these will show as "picked up recently" (dated ${importNewest}).`);
+  console.log("If they're records you already had, run again with --undated.");
+}
 console.log(`${plan.fresh.length} new, ${plan.duplicates.length} already owned, ${plan.skipped.length} missing artist or title.`);
 for (const r of plan.fresh) console.log(`  + ${r.artist} – ${r.title}${r.year ? ` (${r.year})` : ""}`);
 for (const w of cleared) console.log(`  off the want list: ${w.artist} – ${w.title}`);

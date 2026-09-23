@@ -41,8 +41,9 @@ Any of these gets a change onto the site:
 
   New records are added to `collection.csv`, ones already there are skipped,
   and anything now owned comes off `wants.csv`. Then commit and push. Add
-  `--undated` when importing records owned for a long time, so they don't
-  show as "picked up recently".
+  `--undated` when importing records I already had (e.g. my whole collection
+  or a Discogs export), so none of them show as "picked up recently"; it
+  ignores any dates in the file.
 
 The collection labels the newest batch of additions (the latest `added`
 date) as **picked up recently**. When a newer batch is added, the label moves
