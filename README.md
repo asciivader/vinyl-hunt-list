@@ -65,8 +65,12 @@ For invited collaborators, using [Claude Code](https://claude.ai/code):
    `asciivader/vinyl-hunt-list`.
 3. Describe the change you want, e.g. *"make the album cards look like record
    sleeves"*. Claude works on its own branch and follows [CLAUDE.md](CLAUDE.md).
-4. When you like it, ask Claude to open a pull request. I review and merge it,
-   and the site updates a minute later.
+4. When you like it, ask Claude to open a pull request. A comment with a
+   **preview link** appears on it within a couple of minutes: the whole site
+   with your changes and the real lists, marked with a yellow banner. It
+   updates every time you push more changes.
+5. I look at the preview, then approve and merge. The live site updates a
+   minute later and the preview goes away.
 
 ## Make your own
 
@@ -104,5 +108,6 @@ The site is published free with GitHub Pages. One-time setup in the repo on gith
 | `data/` | The data files above |
 | `index.html`, `print.html`, `src/` | The site: plain HTML/CSS/JS, no build step |
 | `scripts/import.js` | CSV import (`npm run import`) |
+| `scripts/build-site.sh` | Assembles the published site and pull request previews |
 | `scripts/validate.js`, `test/` | Data checks and unit tests (`npm run validate`, `npm test`) |
 | `server.js` | Local preview (`npm start`) |

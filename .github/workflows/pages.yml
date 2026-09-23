@@ -1,21 +1,33 @@
 name: Publish site
 
+# Publishes main at the site root, plus a preview of every open pull request
+# from a branch in this repo at previews/pr-<N>/ (see scripts/build-site.sh).
+#
+# Pull request events use pull_request_target, so this workflow and the build
+# script always come from main. Pull request files are copied into the
+# preview but never run.
+
 on:
   push:
     branches: [main]
+  pull_request_target:
+    types: [opened, reopened, synchronize, closed]
   workflow_dispatch:
 
 permissions:
   contents: read
   pages: write
   id-token: write
+  pull-requests: write
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   deploy:
+    # Fork pull requests are closed automatically and never get previews.
+    if: github.event_name != 'pull_request_target' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -23,19 +35,44 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.repository.default_branch }}
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
       - run: npm run validate
-      - name: Collect site files
+
+      - name: Find open pull requests to preview
+        id: prs
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          mkdir _site
-          cp -r index.html print.html src data _site/
-          git log -1 --format=%cI -- data > _site/data/updated.txt
+          specs=""
+          for pr in $(gh pr list --state open --limit 50 --json number,isCrossRepository \
+                        --jq '.[] | select(.isCrossRepository | not) | .number'); do
+            git fetch --quiet origin "+refs/pull/$pr/head:refs/remotes/pr/$pr"
+            specs="$specs $pr:$(git rev-parse "refs/remotes/pr/$pr")"
+          done
+          echo "specs=$specs" >> "$GITHUB_OUTPUT"
+          echo "Previews:${specs:- none}"
+
+      - name: Build site
+        run: bash scripts/build-site.sh ${{ steps.prs.outputs.specs }}
+
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
       - id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Post the preview link
+        if: github.event_name == 'pull_request_target' && (github.event.action == 'opened' || github.event.action == 'reopened')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          SITE: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body "**Preview:** ${SITE}previews/pr-${PR}/
+
+          This shows the page with these changes and the current lists. It updates on every push to this pull request and is removed when it closes. The live site doesn't change until this is merged."

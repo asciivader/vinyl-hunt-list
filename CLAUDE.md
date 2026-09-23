@@ -56,7 +56,9 @@ diffs stay reviewable.
    and keep `print.html` to exactly two pages (see below).
 5. Run `npm test` and `npm run validate`, then commit and push the branch.
 6. Open a pull request into `main` that says in plain words what changes on
-   the page and why, so the owner can review it without reading code.
+   the page and why, so the owner can review it without reading code. A
+   preview of the site with the change is published automatically at
+   `previews/pr-<N>/` and linked in a comment; point the owner to it.
 
 When working for the owner, run `npm run validate` and `npm test` before
 committing; both must pass. The `Check data` workflow runs them on every push
@@ -78,5 +80,7 @@ notes, or ask the owner what to cut. Don't shrink the type.
   (shared by browser and scripts), `src/data.js` loading, `src/app.js` the
   viewer, `src/print.js` the printed sheet.
 - `scripts/import.js` merges an owned-records CSV (`npm run import`).
+- `scripts/build-site.sh` assembles `_site/` for GitHub Pages: main at the root,
+  open pull requests at `previews/pr-<N>/` (run by `.github/workflows/pages.yml`).
 - `server.js` — `npm start` is a view-only local preview on http://localhost:4321.
 - `npm test` runs unit tests in `test/`; `npm run validate` checks the data.
