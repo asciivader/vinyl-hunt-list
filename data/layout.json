@@ -1,0 +1,36 @@
+{
+  "pages": [
+    {
+      "note": "Used and out of print unless noted. Shelf check = confirm you don't already own it.",
+      "sections": [
+        {
+          "name": "Classic rock"
+        },
+        {
+          "name": "Punk, hardcore, pop-punk",
+          "newColumn": true
+        },
+        {
+          "name": "80s: new wave, post-punk, synth-pop",
+          "gap": true
+        }
+      ]
+    },
+    {
+      "note": "Bootleg check on hip hop: barcode, catalog no., print quality, disc color/count, dead wax.",
+      "sections": [
+        {
+          "name": "90s alt, metal, indie"
+        },
+        {
+          "name": "Americana, alt-country",
+          "gap": true
+        },
+        {
+          "name": "Hip hop",
+          "newColumn": true
+        }
+      ]
+    }
+  ]
+}

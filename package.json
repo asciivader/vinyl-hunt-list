@@ -1,0 +1,14 @@
+{
+  "name": "vinyl-hunt-list",
+  "private": true,
+  "type": "module",
+  "description": "Record collection and want list with a printable hunt sheet.",
+  "scripts": {
+    "start": "node server.js",
+    "validate": "node scripts/validate.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
