@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vinyl Hunt List</title>
+<style>
+  /* One US letter sheet, printed double-sided, black and white. */
+  @page { size: letter; margin: 0; }
+
+  html, body { margin: 0; }
+  body {
+    background: #f5f5f4;
+    padding: 48px 24px;
+    min-width: max-content;
+    font-family: Helvetica, Arial, sans-serif;
+    color: #111;
+  }
+
+  .page {
+    width: 8.5in;
+    height: 11in;
+    margin: 0 auto;
+    padding: 0.42in 0.45in 0.38in;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: #fff;
+    border-radius: 7px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+  }
+  .page + .page { margin-top: 1rem; }
+
+  .masthead {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    border-bottom: 2px solid #111;
+    padding-bottom: 5px;
+    margin-bottom: 8px;
+  }
+  .masthead h1 {
+    margin: 0;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 17pt;
+    font-weight: bold;
+    letter-spacing: -0.01em;
+  }
+  .masthead p {
+    margin: 0;
+    font-size: 7.5pt;
+    color: #444;
+    text-align: right;
+    white-space: nowrap;
+    line-height: 1.3;
+  }
+
+  .columns {
+    flex: 1;
+    min-height: 0;
+    column-count: 2;
+    column-gap: 0.3in;
+    column-rule: 1px solid #bbb;
+    column-fill: auto;
+    font-size: 8pt;
+    line-height: 1.16;
+  }
+
+  .section {
+    break-inside: avoid;
+    margin: 0 0 4px;
+    padding: 2px 6px;
+    background: #111;
+    color: #fff;
+    font-size: 7.5pt;
+    font-weight: bold;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .section.gap { margin-top: 8px; }
+  .section.new-column { break-before: column; }
+
+  .artist { break-inside: avoid; margin-bottom: 3px; }
+  .artist h2 {
+    margin: 0;
+    padding-left: 17px;
+    border-bottom: 1px solid #111;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 8.2pt;
+    font-weight: bold;
+  }
+
+  /* Checkbox on both sides of every title: left = found/bought, right = seen but passed. */
+  .title {
+    display: grid;
+    grid-template-columns: 13px 1fr 13px;
+    column-gap: 6px;
+    align-items: start;
+    padding: 0.5px 0;
+    border-bottom: 1px dotted #ccc;
+  }
+  .box {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-top: 2px;
+    border: 1px solid #111;
+  }
+  .note { font-size: 6.6pt; color: #555; }
+
+  .footer {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 6px;
+    padding-top: 4px;
+    border-top: 1px solid #bbb;
+    font-size: 7pt;
+    color: #666;
+  }
+
+  @media print {
+    body { background: none; padding: 0; min-width: 0; }
+    .page { margin: 0; border-radius: 0; box-shadow: none; }
+    .page + .page { margin-top: 0; break-before: page; }
+  }
+</style>
+</head>
+<body>
+<main id="sheet"></main>
+
+<script>
+// Each artist is [name, [[title, note?], ...]].
+// A section with newColumn starts at the top of the next column;
+// gap adds space above a section that follows another in the same column.
+const PAGES = [
+  // Page 1
+  [
+    { name: "Classic rock", artists: [
+      ["Warren Zevon", [["Sentimental Hygiene", "R.E.M. as the band"]]],
+      ["Faces", [["Long Player"], ["A Nod Is as Good as a Wink... to a Blind Horse"], ["Ooh La La"]]],
+      ["Tom Petty and the Heartbreakers", [["Greatest Hits", "1993; 2016 reissue"], ["Wildflowers", "2020 reissue"]]],
+      ["Steve Miller Band", [["Greatest Hits 1974-78"]]],
+      ["Rod Stewart", [["Gasoline Alley", "1970"]]],
+      ["Aerosmith", [["Aerosmith", "1973"], ["Get Your Wings", "1974"], ["Rocks", "1976"]]],
+      ["The Allman Brothers Band", [["Brothers and Sisters"]]],
+      ["The Jimi Hendrix Experience", [["Electric Ladyland", "double LP"]]],
+      ["The Who", [["Who's Next"]]],
+      ["Eric Clapton", [["Layla and Other Assorted Love Songs"]]],
+      ["Deep Purple", [["Machine Head"]]],
+      ["Blue Oyster Cult", [["Spectres", "Godzilla"]]],
+      ["George Thorogood and the Destroyers", [["George Thorogood and the Destroyers"]]],
+      ["Jackson 5", [["Greatest Hits", "1971 Motown"]]],
+      ["Elvis Presley", [["Aloha from Hawaii via Satellite", "1973"]]],
+      ["Van Morrison", [["Moondance"]]],
+      ["Pink Floyd", [["The Dark Side of the Moon", "original pressing"], ["The Wall", "double LP"]]],
+      ["Queen", [["Greatest Hits", "1981"], ["Greatest Hits II", "1991; Under Pressure"]]],
+      ["Mötley Crüe", [["Too Fast for Love", "Leathür original"], ["Girls, Girls, Girls", "1987"]]],
+    ]},
+    { name: "Punk, hardcore, pop-punk", newColumn: true, artists: [
+      ["Johnny Thunders", [["So Alone"], ["L.A.M.F.", "get Lost '77 Mixes"]]],
+      ["Sex Pistols", [["Never Mind the Bollocks", "Warner US original"], ["The Great Rock 'n' Roll Swindle", "UK double"]]],
+      ["The Clash", [["Give 'Em Enough Rope"], ["Combat Rock"]]],
+      ["Ramones", [["Ramones", "1976"], ["Leave Home"], ["Road to Ruin"], ["It's Alive"]]],
+      ["Operation Ivy", [["Energy", "1989 Lookout"]]],
+      ["NOFX", [["Punk in Drublic"]]],
+      ["Green Day", [["39/Smooth", "Lookout; or 1,039/Smoothed Out"], ["Insomniac"], ["Nimrod"]]],
+      ["Blink-182", [["Cheshire Cat", "1995 original scarce"], ["Dude Ranch", "1997 original rare"]]],
+    ]},
+    { name: "80s: new wave, post-punk, synth-pop", gap: true, artists: [
+      ["The English Beat", [["I Just Can't Stop It"], ["Special Beat Service"]]],
+      ["Joy Division", [["Substance"]]],
+      ["New Order", [["Substance", "1987; double LP"]]],
+      ["The Cure", [["Disintegration", "2010 2LP"], ["Galore", "or Greatest Hits (2001)"]]],
+      ["The Smiths", [["Louder Than Bombs", "US double LP singles comp"], ["Strangeways, Here We Come"]]],
+      ["Morrissey", [["Bona Drag"]]],
+      ["Depeche Mode", [["Speak & Spell", "1981; Just Can't Get Enough"], ["\"Stripped\" 12-inch single", "pick, unclaimed"]]],
+      ["Book of Love", [["Book of Love"]]],
+      ["The Psychedelic Furs", [["Midnight to Midnight"], ["All of This and Nothing", "1988 comp"]]],
+    ]},
+  ],
+  // Page 2
+  [
+    { name: "90s alt, metal, indie", artists: [
+      ["The Replacements", [["For Sale: Live at Maxwell's 1986", "definite"], ["Let It Be"], ["Tim"], ["Pleased to Meet Me"]]],
+      ["Camper Van Beethoven", [["Telephone Free Landslide Victory"]]],
+      ["Stone Temple Pilots", [["Core", "1992 original scarce"], ["Purple", "1994 original scarce"]]],
+      ["Pixies", [["Come On Pilgrim", "1987 mini-LP"], ["Surfer Rosa"], ["Bossanova"], ["Trompe le Monde"], ["Head Carrier", "2016"]]],
+      ["R.E.M.", [["Document", "1987"], ["Out of Time", "1991"], ["Automatic for the People", "1992"]]],
+      ["The Smashing Pumpkins", [["Siamese Dream", "1993; double LP"], ["Mellon Collie and the Infinite Sadness"]]],
+      ["Weezer", [["Pinkerton", "1996"]]],
+      ["The Wallflowers", [["Bringing Down the Horse"]]],
+      ["The Hold Steady", [["Boys and Girls in America"], ["Stay Positive"]]],
+      ["The Mountain Goats", [["Zopilote Machine"], ["All Hail West Texas"], ["We Shall All Be Healed"], ["Beat the Champ"]]],
+    ]},
+    { name: "Americana, alt-country", gap: true, artists: [
+      ["Whiskeytown", [["Strangers Almanac", "2008 LP or new deluxe 2LP"], ["Pneumonia", "vinyl scarce; verify on Discogs"]]],
+      ["Robert Earl Keen", [["No. 2 Live Dinner", "in print; online"]]],
+      ["Ryan Adams", [["Heartbreaker", "2016 reissue"], ["Ashes & Fire"], ["1989", "Taylor Swift covers"]]],
+      ["Justin Townes Earle", [["Midnight at the Movies"], ["Harlem River Blues"]]],
+      ["Band of Horses", [["Everything All the Time"], ["Cease to Begin"], ["Infinite Arms"]]],
+    ]},
+    { name: "Hip hop", newColumn: true, artists: [
+      ["Jay-Z", [["The Black Album"], ["American Gangster"], ["The Blueprint 3"]]],
+      ["Beastie Boys", [["Licensed to Ill"], ["Ill Communication", "double LP"], ["Hello Nasty", "double LP"]]],
+      ["The Notorious B.I.G.", [["Ready to Die"], ["Life After Death"]]],
+      ["Dr. Dre", [["The Chronic"], ["2001"]]],
+      ["Snoop Dogg", [["Doggystyle"]]],
+      ["2Pac", [["All Eyez on Me", "double LP"]]],
+      ["Eminem", [["The Slim Shady LP"], ["The Marshall Mathers LP"]]],
+      ["Cypress Hill", [["Cypress Hill", "1991"], ["Black Sunday", "1993"]]],
+      ["De La Soul", [["De La Soul Is Dead"]]],
+      ["Big Pun", [["Capital Punishment"]]],
+      ["Wu-Tang Clan", [["Enter the Wu-Tang (36 Chambers)"]]],
+      ["Ol' Dirty Bastard", [["Return to the 36 Chambers"]]],
+      ["Redman", [["Doc's da Name 2000"]]],
+      ["Method Man and Redman", [["Blackout!"]]],
+    ]},
+  ],
+];
+
+const HEADER_NOTES = [
+  "Used and out of print unless noted. Shelf check = confirm you don't already own it.",
+  "Bootleg check on hip hop: barcode, catalog no., print quality, disc color/count, dead wax.",
+];
+
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text != null) node.textContent = text;
+  return node;
+}
+
+function renderTitle([title, note]) {
+  const row = el("div", "title");
+  const label = el("span", null, title);
+  if (note) label.append(" ", el("span", "note", note));
+  row.append(el("span", "box"), label, el("span", "box"));
+  return row;
+}
+
+function renderPage(sections, index) {
+  const page = el("section", "page");
+  page.setAttribute("aria-label", `Page ${index + 1}`);
+
+  const masthead = el("header", "masthead");
+  masthead.append(el("h1", null, "Vinyl hunt list"), el("p", null, HEADER_NOTES[index]));
+
+  const columns = el("div", "columns");
+  for (const section of sections) {
+    const bar = el("div", "section", section.name);
+    if (section.gap) bar.classList.add("gap");
+    if (section.newColumn) bar.classList.add("new-column");
+    columns.append(bar);
+    for (const [name, titles] of section.artists) {
+      const group = el("div", "artist");
+      group.append(el("h2", null, name), ...titles.map(renderTitle));
+      columns.append(group);
+    }
+  }
+
+  const footer = el("footer", "footer");
+  footer.append(
+    el("span", null, "Left box: found / bought. Right box: seen but passed."),
+    el("span", null, `${index + 1} of ${PAGES.length}`),
+  );
+
+  page.append(masthead, columns, footer);
+  return page;
+}
+
+document.getElementById("sheet").append(...PAGES.map(renderPage));
+</script>
+</body>
+</html>
