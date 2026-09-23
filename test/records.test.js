@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { parseCsv, parseCsvObjects, stringifyCsv } from "../src/csv.js";
-import { recordKey, planImport, insertWant, validateData, WANT_COLUMNS, COLLECTION_COLUMNS } from "../src/records.js";
+import { recordKey, planImport, validateData, WANT_COLUMNS, COLLECTION_COLUMNS } from "../src/records.js";
 
 test("CSV round-trips quotes, commas and newlines", () => {
   const rows = [{ artist: 'The "Band"', title: "Girls, Girls, Girls", year: "", note: "two\nlines" }];
@@ -42,18 +42,6 @@ test("planImport reads a Discogs export and skips duplicates", () => {
 
 test("planImport needs artist and title columns", () => {
   assert.match(planImport(parseCsv("name,year\nfoo,1999"), []).error, /artist/);
-});
-
-test("insertWant keeps an artist's titles together", () => {
-  const wants = [
-    { section: "Rock", artist: "Faces", title: "Long Player" },
-    { section: "Rock", artist: "Queen", title: "Greatest Hits" },
-    { section: "Punk", artist: "Ramones", title: "Leave Home" },
-  ];
-  const next = insertWant(wants, { section: "Rock", artist: "Faces", title: "Ooh La La" });
-  assert.deepEqual(next.map((w) => w.title), ["Long Player", "Ooh La La", "Greatest Hits", "Leave Home"]);
-  const fresh = insertWant(wants, { section: "Rock", artist: "The Who", title: "Who's Next" });
-  assert.equal(fresh[2].title, "Who's Next");
 });
 
 test("validateData catches bad sections, duplicates and owned wants", () => {

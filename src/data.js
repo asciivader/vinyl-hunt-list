@@ -1,8 +1,7 @@
-// Loading and saving the data files. Saving only works when the site is
-// served by server.js (npm start); the published site is read-only.
+// Loads the data files the site displays. The site never writes them; they
+// change only through the GitHub repo.
 
-import { parseCsvObjects, stringifyCsv } from "./csv.js";
-import { WANT_COLUMNS, COLLECTION_COLUMNS } from "./records.js";
+import { parseCsvObjects } from "./csv.js";
 
 async function fetchText(path) {
   const res = await fetch(path, { cache: "no-store" });
@@ -10,33 +9,24 @@ async function fetchText(path) {
   return res.text();
 }
 
-export async function loadData() {
-  const [wants, collection, layout] = await Promise.all([
-    fetchText("data/wants.csv").then(parseCsvObjects),
-    fetchText("data/collection.csv").then(parseCsvObjects),
-    fetchText("data/layout.json").then(JSON.parse),
-  ]);
-  return { wants: wants.rows, collection: collection.rows, layout };
-}
-
-export async function isEditable() {
+// data/updated.txt is written at publish time (see .github/workflows/pages.yml)
+// and holds the date of the last commit that touched data/.
+async function fetchUpdated() {
   try {
-    const res = await fetch("api/status", { cache: "no-store" });
-    return res.ok && (await res.json()).editable === true;
+    return (await fetchText("data/updated.txt")).trim();
   } catch {
-    return false;
+    return "";
   }
 }
 
-const COLUMNS = { "wants.csv": WANT_COLUMNS, "collection.csv": COLLECTION_COLUMNS };
-
-export async function saveData(name, rows) {
-  const res = await fetch(`api/data/${name}`, {
-    method: "PUT",
-    headers: { "Content-Type": "text/csv" },
-    body: stringifyCsv(COLUMNS[name], rows),
-  });
-  if (!res.ok) throw new Error(`Saving ${name} failed: ${await res.text()}`);
+export async function loadData() {
+  const [wants, collection, layout, updated] = await Promise.all([
+    fetchText("data/wants.csv").then(parseCsvObjects),
+    fetchText("data/collection.csv").then(parseCsvObjects),
+    fetchText("data/layout.json").then(JSON.parse),
+    fetchUpdated(),
+  ]);
+  return { wants: wants.rows, collection: collection.rows, layout, updated };
 }
 
 // Wants grouped for display: pages -> sections -> artists -> titles, in file

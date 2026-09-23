@@ -88,17 +88,6 @@ export function planImport(csvRows, collection) {
   return { fresh, duplicates, skipped, mapped };
 }
 
-// Inserts a want next to the same artist's other titles in that section,
-// otherwise at the end of the section, so the printed list stays grouped.
-export function insertWant(wants, want) {
-  const sameArtist = (w) => w.section === want.section && recordKey(w.artist, "") === recordKey(want.artist, "");
-  let at = wants.findLastIndex(sameArtist);
-  if (at < 0) at = wants.findLastIndex((w) => w.section === want.section);
-  const next = wants.slice();
-  next.splice(at < 0 ? next.length : at + 1, 0, want);
-  return next;
-}
-
 // Problems that should block a pull request. Returns human-readable strings.
 export function validateData({ wants, wantColumns, collection, collectionColumns, layout }) {
   const errors = [];

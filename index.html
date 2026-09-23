@@ -14,7 +14,7 @@
     <h1>Vinyl hunt list</h1>
     <span class="stats" id="stats"></span>
     <span class="spacer"></span>
-    <span class="mode" id="mode">Read-only</span>
+    <span class="updated" id="updated"></span>
     <a class="btn" href="print.html">Print sheet</a>
   </div>
   <nav class="wrap tabs" aria-label="Views">
@@ -27,7 +27,6 @@
   <section id="wants-view" aria-label="Want list">
     <div class="toolbar">
       <input class="search" id="want-search" type="search" placeholder="Search artists, titles, notes" aria-label="Search the want list">
-      <button class="btn primary" type="button" data-edit data-open="want-dialog">+ Add to want list</button>
     </div>
     <div class="chips" id="section-chips" role="group" aria-label="Filter by section"></div>
     <div id="want-list"></div>
@@ -35,9 +34,7 @@
 
   <section id="collection-view" aria-label="Collection" hidden>
     <div class="toolbar">
-      <input class="search" id="owned-search" type="search" placeholder="Search your collection" aria-label="Search the collection">
-      <button class="btn" type="button" data-edit data-open="import-dialog">Import CSV</button>
-      <button class="btn primary" type="button" data-edit data-open="owned-dialog">+ Add record</button>
+      <input class="search" id="owned-search" type="search" placeholder="Search the collection" aria-label="Search the collection">
     </div>
     <div class="table-wrap">
       <table>
@@ -50,7 +47,6 @@
             <th><button type="button" data-sort="label">Label</button></th>
             <th><button type="button" data-sort="notes">Notes</button></th>
             <th><button type="button" data-sort="added">Added</button></th>
-            <th data-edit><span class="visually-hidden">Actions</span></th>
           </tr>
         </thead>
         <tbody id="owned-rows"></tbody>
@@ -60,69 +56,6 @@
 
   <footer class="footer" id="footer"></footer>
 </main>
-
-<dialog id="want-dialog">
-  <form method="dialog" id="want-form">
-    <h2>Add to want list</h2>
-    <div class="fields">
-      <label class="full">Section
-        <select name="section" required></select>
-      </label>
-      <label>Artist <input name="artist" required autocomplete="off" list="artist-options"></label>
-      <label>Title <input name="title" required autocomplete="off"></label>
-      <label class="full">Note <input name="note" placeholder="e.g. 1976 original, double LP" autocomplete="off"></label>
-    </div>
-    <p class="hint warn" data-dup hidden></p>
-    <div class="dialog-actions">
-      <button class="btn" value="cancel" formnovalidate>Cancel</button>
-      <button class="btn primary" value="save">Add</button>
-    </div>
-  </form>
-</dialog>
-
-<dialog id="owned-dialog">
-  <form method="dialog" id="owned-form">
-    <h2>Add to collection</h2>
-    <div class="fields">
-      <label>Artist <input name="artist" required autocomplete="off" list="artist-options"></label>
-      <label>Title <input name="title" required autocomplete="off"></label>
-      <label>Year <input name="year" inputmode="numeric" pattern="\d{4}" placeholder="1976" autocomplete="off"></label>
-      <label>Format <input name="format" value="LP" autocomplete="off" list="format-options"></label>
-      <label>Label <input name="label" autocomplete="off"></label>
-      <label>Catalog no. <input name="catalog" autocomplete="off"></label>
-      <label>Condition <input name="condition" placeholder="VG+" autocomplete="off"></label>
-      <label>Added <input name="added" type="date"></label>
-      <label class="full">Notes <input name="notes" autocomplete="off"></label>
-    </div>
-    <p class="hint warn" data-dup hidden></p>
-    <p class="hint" data-want-match hidden></p>
-    <div class="dialog-actions">
-      <button class="btn" value="cancel" formnovalidate>Cancel</button>
-      <button class="btn primary" value="save">Add</button>
-    </div>
-  </form>
-</dialog>
-
-<dialog id="import-dialog">
-  <form method="dialog" id="import-form">
-    <h2>Import a CSV</h2>
-    <label class="drop" id="drop">
-      <strong>Choose a CSV file</strong>
-      <span>or drop it here. Needs artist and title columns; a Discogs collection export works as-is.</span>
-      <input type="file" name="file" accept=".csv,text/csv" hidden>
-    </label>
-    <div class="preview" id="import-preview" hidden></div>
-    <div class="dialog-actions">
-      <button class="btn" value="cancel" formnovalidate>Cancel</button>
-      <button class="btn primary" value="save" id="import-go" disabled>Import</button>
-    </div>
-  </form>
-</dialog>
-
-<datalist id="artist-options"></datalist>
-<datalist id="format-options">
-  <option value="LP"><option value="2LP"><option value="EP"><option value="7-inch"><option value="12-inch single"><option value="Box set">
-</datalist>
 
 <script type="module" src="src/app.js"></script>
 </body>

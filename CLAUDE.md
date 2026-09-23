@@ -1,8 +1,10 @@
 # Vinyl hunt list
 
 A record collection and want list for asciivader. The data lives in plain CSV
-files in this repo; a static site (published on GitHub Pages) displays it,
-and a one-page printable "hunt sheet" is generated from the want list.
+files in this repo; a static, view-only site (published on GitHub Pages)
+displays it, and a one-page printable "hunt sheet" is generated from the want
+list. The site must never gain a way to edit data: every change goes through
+the files in `data/` and git.
 
 ## Data files — the source of truth
 
@@ -22,6 +24,12 @@ A record must never be in both files: when something is bought, remove it
 from `wants.csv` and add it to `collection.csv`. Record matching ignores case,
 accents, punctuation, a leading "The" and `&` vs "and" (see `recordKey` in
 `src/records.js`).
+
+Common owner requests:
+- "I bought X": remove X from `wants.csv`, add it to `collection.csv` with
+  `added` set to today and `format` LP unless told otherwise.
+- "Import this CSV": `npm run import -- <file> --dry-run`, show the owner the
+  summary, then run it without `--dry-run`.
 
 Edit the CSVs directly and keep them valid CSV (quote fields containing
 commas or quotes). Don't reorder or reformat rows you aren't changing, so
@@ -45,7 +53,7 @@ The `Check data` workflow runs the same checks on every pull request.
 `print.html` must stay exactly two letter pages (one sheet, front and back).
 Each page has two columns; anything that doesn't fit is clipped, and the page
 shows a warning banner on screen. After adding more than a few wants, open
-`print.html` via `npm start` and check for the banner. If a page overflows,
+`print.html` in the local preview (`npm start`) and check for the banner. If a page overflows,
 rebalance by moving sections between pages in `layout.json`, shortening
 notes, or ask the owner what to cut. Don't shrink the type.
 
@@ -53,8 +61,8 @@ notes, or ask the owner what to cut. Don't shrink the type.
 
 - No build step and no dependencies. Plain ES modules in `src/`, served as-is.
 - `src/csv.js` CSV parsing, `src/records.js` matching/import/validation rules
-  (shared by browser, server and scripts), `src/data.js` loading and saving,
-  `src/app.js` the app, `src/print.js` the printed sheet.
-- `server.js` — `npm start` serves the site on http://localhost:4321 and lets
-  the app save edits to `data/*.csv`. The published site is read-only.
+  (shared by browser and scripts), `src/data.js` loading, `src/app.js` the
+  viewer, `src/print.js` the printed sheet.
+- `scripts/import.js` merges an owned-records CSV (`npm run import`).
+- `server.js` — `npm start` is a view-only local preview on http://localhost:4321.
 - `npm test` runs unit tests in `test/`; `npm run validate` checks the data.
