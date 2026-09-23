@@ -48,11 +48,25 @@ Every change to `main` is checked (`npm run validate`) and then published.
 ## Who can change what
 
 - **Anyone with the link** can view the site, and nothing more.
-- **Only I change this repo.** It has no collaborators, so nobody else can
-  push. The site is built only from my pushes to `main`.
-- **Pull requests from anyone else are closed automatically**, so nothing from
-  outside can end up in the lists. Anyone is welcome to copy the whole thing
-  and make their own; see below.
+- **Only I change the lists.** A check fails any pull request from someone
+  else that touches `data/`.
+- **Collaborators I invite** can propose design changes on their own branches
+  as pull requests. Nothing reaches `main` (and so the site) until I approve
+  and merge it.
+- **Pull requests from anyone else are closed automatically.** Anyone is
+  welcome to copy the whole thing and make their own; see below.
+
+## Working on the design together
+
+For invited collaborators, using [Claude Code](https://claude.ai/code):
+
+1. Accept the GitHub invite to this repo.
+2. In Claude Code, connect GitHub and start a session on
+   `asciivader/vinyl-hunt-list`.
+3. Describe the change you want, e.g. *"make the album cards look like record
+   sleeves"*. Claude works on its own branch and follows [CLAUDE.md](CLAUDE.md).
+4. When you like it, ask Claude to open a pull request. I review and merge it,
+   and the site updates a minute later.
 
 ## Make your own
 

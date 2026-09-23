@@ -37,16 +37,30 @@ diffs stay reviewable.
 
 ## Who changes this repo
 
-Only the owner (asciivader) changes this repo. Pull requests from forks are
-closed automatically (`.github/workflows/close-outside-prs.yml`). If you are
-not the owner:
+- **The owner (asciivader)** changes anything, including the lists.
+- **Invited collaborators** propose design and code changes through pull
+  requests. The owner reviews and merges every one; `main` is protected.
+- **Everyone else** can't change it. Pull requests from forks are closed
+  automatically (`.github/workflows/close-outside-prs.yml`). To make your own
+  version, fork it and change `data/` in the fork (see "Make your own" in
+  README.md).
 
-- Don't open pull requests or issues against this repo.
-- To make your own version, fork it and change `data/` in the fork (see
-  "Make your own" in README.md). Everything else works unchanged.
+### Working as a collaborator
+
+1. Start from an up-to-date `main` and create a branch named for the change,
+   e.g. `design/bigger-album-cards`. Never push to `main`.
+2. Don't touch anything in `data/`. The lists are the owner's alone, and the
+   `lists-owner-only` check fails any collaborator pull request that changes them.
+3. Keep the site view-only: no forms, buttons or code that change data.
+4. Keep the look working in light and dark mode and on a phone (~390px wide),
+   and keep `print.html` to exactly two pages (see below).
+5. Run `npm test` and `npm run validate`, then commit and push the branch.
+6. Open a pull request into `main` that says in plain words what changes on
+   the page and why, so the owner can review it without reading code.
 
 When working for the owner, run `npm run validate` and `npm test` before
-committing; both must pass. The `Check data` workflow runs them on every push.
+committing; both must pass. The `Check data` workflow runs them on every push
+and pull request.
 
 ## The printed sheet
 
