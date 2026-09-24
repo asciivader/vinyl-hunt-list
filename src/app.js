@@ -2,6 +2,7 @@
 // through data/*.csv in the GitHub repo (see README.md).
 
 import { loadData, groupWants } from "./data.js";
+import { artistSortName } from "./records.js";
 
 // On GitHub Pages (<user>.github.io/<repo>/) link to the repo the site was
 // built from, so copies of this project link to themselves.
@@ -96,7 +97,7 @@ function renderWants() {
 // ties fall back to artist, then year, then title, so sorting by artist lists
 // each artist's records in release order.
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
-const sortValue = (r, key) => (key === "artist" ? r.artist.replace(/^the\s+/i, "") : String(r[key] ?? ""));
+const sortValue = (r, key) => (key === "artist" ? artistSortName(r.artist) : String(r[key] ?? ""));
 
 function compareBy(a, b, key, dir = "asc") {
   const x = sortValue(a, key), y = sortValue(b, key);

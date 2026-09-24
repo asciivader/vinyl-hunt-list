@@ -17,6 +17,12 @@ export function recordKey(artist, title) {
   return `${norm(artist)}|${norm(title)}`;
 }
 
+// Artist order everywhere on the site: alphabetical, ignoring a leading "The"
+// (The Clash files under C), accents and case.
+const artistCollator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
+export const artistSortName = (name) => String(name ?? "").replace(/^the\s+/i, "");
+export const compareArtists = (a, b) => artistCollator.compare(artistSortName(a), artistSortName(b));
+
 // Discogs exports disambiguate artists as "Nirvana (2)" or "Prince*".
 function cleanArtist(name) {
   return name.replace(/\s*\(\d+\)$/, "").replace(/\*+$/, "").trim();

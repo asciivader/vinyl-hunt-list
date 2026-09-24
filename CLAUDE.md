@@ -10,8 +10,9 @@ the files in `data/` and git.
 
 - `data/wants.csv` — records being hunted. Columns: `section,artist,title,note`.
   - `section` must be one of the section names in `data/layout.json`.
-  - Row order is display and print order. Keep all of an artist's titles on
-    adjacent rows inside their section; add a new artist at the end of its section.
+  - The site and print sheet show artists alphabetically within each section
+    (ignoring a leading "The"), so a new artist can go anywhere in its section.
+    An artist's titles appear in their row order; keep them on adjacent rows.
   - `note` is optional and short (a year, "double LP", "1976 original"). It
     must fit on one line of the printed sheet: aim for under ~25 characters.
 - `data/collection.csv` — records already owned. Columns:

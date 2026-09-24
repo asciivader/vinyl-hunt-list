@@ -2,6 +2,7 @@
 // change only through the GitHub repo.
 
 import { parseCsvObjects } from "./csv.js";
+import { compareArtists } from "./records.js";
 
 async function fetchText(path) {
   const res = await fetch(path, { cache: "no-store" });
@@ -29,10 +30,12 @@ export async function loadData() {
   return { wants: wants.rows, collection: collection.rows, layout, updated };
 }
 
-// Wants grouped for display: pages -> sections -> artists -> titles, in file
-// order. Sections missing from layout.json go at the end of the last page.
+// Wants grouped for display: pages -> sections -> artists -> titles. Artists
+// are alphabetical within each section; titles keep their file order.
+// Sections missing from layout.json go at the end of the last page.
 export function groupWants(wants, layout) {
   const bySection = new Map();
+  const alphabetical = (artists) => [...artists].sort(([a], [b]) => compareArtists(a, b));
   for (const w of wants) {
     if (!bySection.has(w.section)) bySection.set(w.section, new Map());
     const artists = bySection.get(w.section);
@@ -44,12 +47,12 @@ export function groupWants(wants, layout) {
     ...page,
     sections: page.sections.map((s) => {
       placed.add(s.name);
-      return { ...s, artists: [...(bySection.get(s.name) ?? new Map())] };
+      return { ...s, artists: alphabetical(bySection.get(s.name) ?? []) };
     }),
   }));
   const unplaced = [...bySection].filter(([name]) => !placed.has(name));
   if (unplaced.length && pages.length) {
-    pages.at(-1).sections.push(...unplaced.map(([name, artists]) => ({ name, gap: true, artists: [...artists] })));
+    pages.at(-1).sections.push(...unplaced.map(([name, artists]) => ({ name, gap: true, artists: alphabetical(artists) })));
   }
   return { pages, unplaced: unplaced.map(([name]) => name) };
 }

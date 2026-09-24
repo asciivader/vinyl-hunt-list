@@ -72,3 +72,18 @@ test("validateData catches bad sections, duplicates and owned wants", () => {
   assert.match(errors.join("\n"), /already owned/);
   assert.match(errors.join("\n"), /four digits/);
 });
+
+test("groupWants lists artists alphabetically in each section, ignoring a leading The", async () => {
+  const { groupWants } = await import("../src/data.js");
+  const wants = [
+    { section: "Rock", artist: "Queen", title: "Greatest Hits" },
+    { section: "Rock", artist: "The Clash", title: "Combat Rock" },
+    { section: "Rock", artist: "Aerosmith", title: "Rocks" },
+    { section: "Rock", artist: "Queen", title: "Greatest Hits II" },
+    { section: "Rock", artist: "Mötley Crüe", title: "Dr. Feelgood" },
+  ];
+  const { pages } = groupWants(wants, { pages: [{ sections: [{ name: "Rock" }] }] });
+  const artists = pages[0].sections[0].artists;
+  assert.deepEqual(artists.map(([a]) => a), ["Aerosmith", "The Clash", "Mötley Crüe", "Queen"]);
+  assert.deepEqual(artists[3][1].map((t) => t.title), ["Greatest Hits", "Greatest Hits II"]);
+});
