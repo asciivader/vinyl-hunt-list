@@ -92,19 +92,38 @@ function renderWants() {
 
 /* ---------- Collection ---------- */
 
+// Sorting: artists ignore a leading "The", empty values always go last, and
+// ties fall back to artist, then year, then title, so sorting by artist lists
+// each artist's records in release order.
+const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
+const sortValue = (r, key) => (key === "artist" ? r.artist.replace(/^the\s+/i, "") : String(r[key] ?? ""));
+
+function compareBy(a, b, key, dir = "asc") {
+  const x = sortValue(a, key), y = sortValue(b, key);
+  if (!x !== !y) return x ? -1 : 1;
+  return collator.compare(x, y) * (dir === "asc" ? 1 : -1);
+}
+
+function compareRecords(a, b, { key, dir }) {
+  for (const [k, d] of [[key, dir], ["artist"], ["year"], ["title"]]) {
+    const c = compareBy(a, b, k, d);
+    if (c) return c;
+  }
+  return 0;
+}
+
 function renderCollection() {
   const { key, dir } = state.sort;
   const rows = state.collection
     .filter((r) => matches(state.ownedQuery, r.artist, r.title, r.label, r.notes, r.year, r.catalog))
-    .sort((a, b) => {
-      const cmp = String(a[key]).localeCompare(String(b[key]), undefined, { numeric: true, sensitivity: "base" })
-        || a.artist.localeCompare(b.artist) || a.title.localeCompare(b.title);
-      return dir === "asc" ? cmp : -cmp;
-    });
+    .sort((a, b) => compareRecords(a, b, state.sort));
 
   $$("th button[data-sort]").forEach((b) => {
     if (b.dataset.sort === key) b.dataset.dir = dir; else delete b.dataset.dir;
   });
+  const select = $("#owned-sort");
+  const option = `${key}:${dir}`;
+  select.value = [...select.options].some((o) => o.value === option) ? option : "";
 
   // The newest batch of additions (latest `added` date) is labelled
   // "picked up recently"; the label moves on when a later batch arrives.
@@ -161,6 +180,12 @@ $$("th button[data-sort]").forEach((b) => b.addEventListener("click", () => {
   state.sort = { key, dir: state.sort.key === key && state.sort.dir === "asc" ? "desc" : "asc" };
   renderCollection();
 }));
+$("#owned-sort").addEventListener("change", (e) => {
+  if (!e.target.value) return;
+  const [key, dir] = e.target.value.split(":");
+  state.sort = { key, dir };
+  renderCollection();
+});
 window.addEventListener("hashchange", showView);
 showView();
 

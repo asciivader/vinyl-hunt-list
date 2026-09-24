@@ -217,8 +217,25 @@ th button {
   text-transform: inherit;
   cursor: pointer;
 }
-th button[data-dir="asc"]::after { content: " ▲"; }
-th button[data-dir="desc"]::after { content: " ▼"; }
+th button:hover { text-decoration: underline; }
+th button::after { content: " ↕"; color: var(--faint); }
+th button[data-dir="asc"]::after { content: " ▲"; color: inherit; }
+th button[data-dir="desc"]::after { content: " ▼"; color: inherit; }
+
+.sort {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.sort select {
+  padding: 8px 10px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--ink);
+}
 tbody tr:hover { background: var(--hover); }
 td.artist-cell { font-family: var(--serif); font-weight: bold; }
 td.muted { color: var(--muted); }

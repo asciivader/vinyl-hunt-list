@@ -35,6 +35,17 @@
   <section id="collection-view" aria-label="Collection" hidden>
     <div class="toolbar">
       <input class="search" id="owned-search" type="search" placeholder="Search the collection" aria-label="Search the collection">
+      <label class="sort">Sort
+        <select id="owned-sort">
+          <option value="artist:asc">Artist, A–Z</option>
+          <option value="artist:desc">Artist, Z–A</option>
+          <option value="year:asc">Year, oldest first</option>
+          <option value="year:desc">Year, newest first</option>
+          <option value="title:asc">Title, A–Z</option>
+          <option value="added:desc">Recently added</option>
+          <option value="" disabled hidden>Other column</option>
+        </select>
+      </label>
     </div>
     <div class="table-wrap">
       <table>
