@@ -42,6 +42,9 @@ by itself. Never type it into `notes`, and leave `added` empty for records
 whose purchase date isn't known. `notes` is only for facts about the record
 itself (number of copies, which edition).
 
+Keep artists' own styling of their names and titles, even when it breaks
+normal capitalisation: "mc chris" is always lowercase with no dots.
+
 Edit the CSVs directly and keep them valid CSV (quote fields containing
 commas or quotes). Don't reorder or reformat rows you aren't changing, so
 diffs stay reviewable.
