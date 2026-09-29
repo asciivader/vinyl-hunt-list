@@ -20,13 +20,14 @@ async function fetchUpdated() {
   }
 }
 
-// covers/index.json lists the cover files that exist (see
+// covers/index.json maps each cover that exists to a version tag (see
 // scripts/build-site.sh). Missing index means no covers, not an error.
 async function fetchCovers() {
   try {
-    return new Set(JSON.parse(await fetchText("covers/index.json")));
+    const index = JSON.parse(await fetchText("covers/index.json"));
+    return new Map(Array.isArray(index) ? index.map((slug) => [slug, ""]) : Object.entries(index));
   } catch {
-    return new Set();
+    return new Map();
   }
 }
 

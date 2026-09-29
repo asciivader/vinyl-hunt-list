@@ -26,10 +26,15 @@ for src in "$cache" covers; do
   if compgen -G "$src/*.jpg" > /dev/null; then cp "$src"/*.jpg "$out/covers/"; fi
 done
 node -e '
-  const fs = require("fs");
-  const slugs = fs.readdirSync(process.argv[1]).filter((f) => f.endsWith(".jpg")).map((f) => f.slice(0, -4)).sort();
-  fs.writeFileSync(process.argv[1] + "/index.json", JSON.stringify(slugs) + "\n");
-  console.log(`Covers: ${slugs.length}`);
+  // {slug: short content hash}; the site adds the hash to cover URLs so a
+  // changed cover shows at once instead of the browser'"'"'s cached copy.
+  const fs = require("fs"), crypto = require("crypto");
+  const dir = process.argv[1], index = {};
+  for (const f of fs.readdirSync(dir).filter((f) => f.endsWith(".jpg")).sort()) {
+    index[f.slice(0, -4)] = crypto.createHash("sha1").update(fs.readFileSync(`${dir}/${f}`)).digest("hex").slice(0, 8);
+  }
+  fs.writeFileSync(`${dir}/index.json`, JSON.stringify(index) + "\n");
+  console.log(`Covers: ${Object.keys(index).length}`);
 ' "$out/covers"
 
 banner() {

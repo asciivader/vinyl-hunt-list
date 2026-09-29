@@ -7,6 +7,7 @@
 import { createServer } from "node:http";
 import { readFile, readdir } from "node:fs/promises";
 import { execFile } from "node:child_process";
+import { createHash } from "node:crypto";
 import { promisify } from "node:util";
 import { extname, join, normalize, sep } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -38,13 +39,17 @@ async function lastDataCommit() {
 // Covers, as published: own photos in covers/ win over downloaded ones in
 // .covers-cache/ (npm run covers).
 const COVER_DIRS = ["covers", ".covers-cache"];
-async function coverSlugs() {
-  const slugs = new Set();
+async function coverIndex() {
+  const index = {};
   for (const dir of COVER_DIRS) {
     const files = await readdir(join(ROOT, dir)).catch(() => []);
-    for (const f of files) if (f.endsWith(".jpg")) slugs.add(f.slice(0, -4));
+    for (const f of files) {
+      const slug = f.slice(0, -4);
+      if (!f.endsWith(".jpg") || slug in index) continue;
+      index[slug] = createHash("sha1").update(await readFile(join(ROOT, dir, f))).digest("hex").slice(0, 8);
+    }
   }
-  return [...slugs].sort();
+  return index;
 }
 async function readCover(name) {
   if (!/^[a-z0-9-]+\.jpg$/.test(name)) return null;
@@ -59,7 +64,7 @@ createServer(async (req, res) => {
   if (req.method !== "GET" && req.method !== "HEAD") return send(res, 405, "View-only");
   const { pathname } = new URL(req.url, "http://localhost");
   if (pathname === "/covers/index.json") {
-    return send(res, 200, JSON.stringify(await coverSlugs()), TYPES[".json"]);
+    return send(res, 200, JSON.stringify(await coverIndex()), TYPES[".json"]);
   }
   if (pathname.startsWith("/covers/")) {
     const cover = await readCover(pathname.slice("/covers/".length));

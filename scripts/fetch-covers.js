@@ -68,17 +68,27 @@ export function pickReleaseGroups(response, format = "", year = "") {
 // is fetched again when either changes (better rules, a corrected title).
 const matchedWith = (artist, title) => `${MATCHER_VERSION}|${searchQueries(artist, title)[0]}`;
 
+// fetch, retrying a couple of times when the service says it's busy (503)
+// or has a hiccup, backing off each time.
+async function politeFetch(url, headers) {
+  for (let attempt = 0; ; attempt++) {
+    const res = await fetch(url, { headers });
+    if (res.status < 500 || attempt === 2) return res;
+    await sleep(3000 * (attempt + 1));
+  }
+}
+
 async function findCover(r) {
   const tried = new Set();
   for (const query of searchQueries(r.artist, r.title)) {
     await sleep(1100); // MusicBrainz allows one request per second
     const url = `https://musicbrainz.org/ws/2/release-group/?fmt=json&limit=5&query=${encodeURIComponent(query)}`;
-    const res = await fetch(url, { headers: { "User-Agent": USER_AGENT, Accept: "application/json" } });
+    const res = await politeFetch(url, { "User-Agent": USER_AGENT, Accept: "application/json" });
     if (!res.ok) throw new Error(`MusicBrainz ${res.status}`);
     for (const id of pickReleaseGroups(await res.json(), r.format, r.year).slice(0, 3)) {
       if (tried.has(id)) continue;
       tried.add(id);
-      const art = await fetch(`https://coverartarchive.org/release-group/${id}/front-500`, { headers: { "User-Agent": USER_AGENT } });
+      const art = await politeFetch(`https://coverartarchive.org/release-group/${id}/front-500`, { "User-Agent": USER_AGENT });
       if (art.ok) return Buffer.from(await art.arrayBuffer());
       if (art.status !== 404) throw new Error(`Cover Art Archive ${art.status}`);
     }

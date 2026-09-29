@@ -17,7 +17,7 @@ const state = {
   collection: [],
   layout: { pages: [] },
   updated: "",
-  covers: new Set(),
+  covers: new Map(),
   section: "",
   wantQuery: "",
   ownedQuery: "",
@@ -155,7 +155,9 @@ function renderCollection() {
 const coverUrl = (r) => {
   const slug = [editionCoverSlug(r.artist, r.title, r.notes), coverSlug(r.artist, r.title)]
     .find((s) => state.covers.has(s));
-  return slug ? `covers/${slug}.jpg` : null;
+  if (!slug) return null;
+  const version = state.covers.get(slug);
+  return `covers/${slug}.jpg${version ? `?v=${version}` : ""}`;
 };
 
 // The cover, or a plain record-shaped placeholder when there isn't one.
