@@ -116,6 +116,12 @@ test("cover lookup tries exact, trimmed and loose searches, preferring the right
   assert.deepEqual(pickReleaseGroups(response, "LP"), ["album", "single"]);
   assert.deepEqual(pickReleaseGroups(response, "12-inch single"), ["single", "album"]);
   assert.deepEqual(pickReleaseGroups({}), []);
+  const fleetwood = { "release-groups": [
+    { id: "1968", score: 100, "primary-type": "Album", "first-release-date": "1968-02-24" },
+    { id: "video", score: 100, "primary-type": "Video", "first-release-date": "1975" },
+    { id: "1975", score: 100, "primary-type": "Album", "first-release-date": "1975-07-11" },
+  ] };
+  assert.deepEqual(pickReleaseGroups(fleetwood, "LP", "1975"), ["1975", "1968", "video"]);
 });
 
 test("editionCoverSlug gives each noted copy its own cover name", async () => {

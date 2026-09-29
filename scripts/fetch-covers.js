@@ -6,7 +6,7 @@
 //   npm run covers                 -> .covers-cache/
 //   node scripts/fetch-covers.js --cache <dir> [--limit N]
 
-import { readFile, writeFile, mkdir, access } from "node:fs/promises";
+import { readFile, writeFile, mkdir, access, rm } from "node:fs/promises";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { parseCsvObjects } from "../src/csv.js";
@@ -23,7 +23,7 @@ const quote = (s) => `"${String(s).replace(/[\\"]/g, "\\$&")}"`;
 
 // Bump when the matching rules change, so earlier "not found" results are
 // retried with the new rules.
-const MATCHER_VERSION = 2;
+const MATCHER_VERSION = 3;
 
 // MusicBrainz searches to try, most exact first: the full title as a
 // phrase, the title without (…) or […] asides ("Weezer (Blue Album)" is
@@ -48,27 +48,25 @@ export function searchQueries(artist, title) {
 }
 
 // Confident matches from a search response, best first: albums first (or
-// singles, for records filed as singles), then by search score.
-export function pickReleaseGroups(response, format = "") {
+// singles, for records filed as singles, never videos), then ones first
+// released in the record's year (Fleetwood Mac's 1975 album, not 1968's),
+// then by search score.
+export function pickReleaseGroups(response, format = "", year = "") {
   const want = /single/i.test(format) ? "Single" : "Album";
   return (response?.["release-groups"] ?? [])
     .filter((g) => Number(g.score) >= MIN_SCORE)
-    .map((g, i) => ({ id: g.id, rank: (g["primary-type"] === want ? 0 : 1) * 1000 + i }))
+    .map((g, i) => {
+      const type = g["primary-type"] === want ? 0 : g["primary-type"] === "Video" ? 2 : 1;
+      const sameYear = year && String(g["first-release-date"] ?? "").startsWith(year) ? 0 : 1;
+      return { id: g.id, rank: type * 10000 + sameYear * 1000 + i };
+    })
     .sort((a, b) => a.rank - b.rank)
     .map((g) => g.id);
 }
 
-// The search a downloaded cover was found with, so a cover is fetched again
-// when its record's search changes (a better rule, or a corrected title).
-// Covers from before this was recorded used the plain first search, except
-// that titles with a (…) note were matched without it and may show a
-// same-named album (Weezer's Green Album art for the Blue Album), so those
-// are fetched again.
-function legacyQuery(artist, title) {
-  if (/[([]/.test(title)) return null;
-  const who = NO_ARTIST.has(artist.trim().toLowerCase()) ? "" : ` AND artist:${quote(artist)}`;
-  return `releasegroup:${quote(title)}${who}`;
-}
+// Each downloaded cover remembers the rules and search that found it, so it
+// is fetched again when either changes (better rules, a corrected title).
+const matchedWith = (artist, title) => `${MATCHER_VERSION}|${searchQueries(artist, title)[0]}`;
 
 async function findCover(r) {
   const tried = new Set();
@@ -77,7 +75,7 @@ async function findCover(r) {
     const url = `https://musicbrainz.org/ws/2/release-group/?fmt=json&limit=5&query=${encodeURIComponent(query)}`;
     const res = await fetch(url, { headers: { "User-Agent": USER_AGENT, Accept: "application/json" } });
     if (!res.ok) throw new Error(`MusicBrainz ${res.status}`);
-    for (const id of pickReleaseGroups(await res.json(), r.format).slice(0, 3)) {
+    for (const id of pickReleaseGroups(await res.json(), r.format, r.year).slice(0, 3)) {
       if (tried.has(id)) continue;
       tried.add(id);
       const art = await fetch(`https://coverartarchive.org/release-group/${id}/front-500`, { headers: { "User-Agent": USER_AGENT } });
@@ -114,8 +112,7 @@ async function main() {
     if (seen.has(slug)) continue;
     seen.add(slug);
     if (await exists(new URL(`../covers/${slug}.jpg`, import.meta.url))) continue; // own photo
-    const query = searchQueries(r.artist, r.title)[0];
-    if (await exists(new URL(`${slug}.jpg`, cacheDir)) && (foundWith[slug] ?? legacyQuery(r.artist, r.title)) === query) continue;
+    if (await exists(new URL(`${slug}.jpg`, cacheDir)) && foundWith[slug] === matchedWith(r.artist, r.title)) continue;
     if (misses[slug] && !stale(misses[slug])) continue;
     todo.push({ ...r, slug });
   }
@@ -125,13 +122,14 @@ async function main() {
     try {
       const cover = await findCover(r);
       if (!cover) {
+        await rm(new URL(`${r.slug}.jpg`, cacheDir), { force: true });
         misses[r.slug] = today;
         missed++;
         console.log(`  no cover: ${r.artist} – ${r.title}`);
         continue;
       }
       await writeFile(new URL(`${r.slug}.jpg`, cacheDir), cover);
-      foundWith[r.slug] = searchQueries(r.artist, r.title)[0];
+      foundWith[r.slug] = matchedWith(r.artist, r.title);
       delete misses[r.slug];
       found++;
       console.log(`  cover: ${r.artist} – ${r.title}`);
