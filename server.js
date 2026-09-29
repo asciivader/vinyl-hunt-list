@@ -5,7 +5,7 @@
 //   PORT=8080 npm start
 
 import { createServer } from "node:http";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { extname, join, normalize, sep } from "node:path";
@@ -35,9 +35,36 @@ async function lastDataCommit() {
   return stdout.trim();
 }
 
+// Covers, as published: own photos in covers/ win over downloaded ones in
+// .covers-cache/ (npm run covers).
+const COVER_DIRS = ["covers", ".covers-cache"];
+async function coverSlugs() {
+  const slugs = new Set();
+  for (const dir of COVER_DIRS) {
+    const files = await readdir(join(ROOT, dir)).catch(() => []);
+    for (const f of files) if (f.endsWith(".jpg")) slugs.add(f.slice(0, -4));
+  }
+  return [...slugs].sort();
+}
+async function readCover(name) {
+  if (!/^[a-z0-9-]+\.jpg$/.test(name)) return null;
+  for (const dir of COVER_DIRS) {
+    const data = await readFile(join(ROOT, dir, name)).catch(() => null);
+    if (data) return data;
+  }
+  return null;
+}
+
 createServer(async (req, res) => {
   if (req.method !== "GET" && req.method !== "HEAD") return send(res, 405, "View-only");
   const { pathname } = new URL(req.url, "http://localhost");
+  if (pathname === "/covers/index.json") {
+    return send(res, 200, JSON.stringify(await coverSlugs()), TYPES[".json"]);
+  }
+  if (pathname.startsWith("/covers/")) {
+    const cover = await readCover(pathname.slice("/covers/".length));
+    return cover ? send(res, 200, cover, "image/jpeg") : send(res, 404, "Not found");
+  }
   if (pathname === "/data/updated.txt") {
     return send(res, 200, await lastDataCommit().catch(() => ""));
   }

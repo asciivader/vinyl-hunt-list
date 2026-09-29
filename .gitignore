@@ -3,3 +3,4 @@ _site/
 data/*.tmp
 .DS_Store
 inbox/
+.covers-cache/

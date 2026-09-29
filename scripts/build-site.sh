@@ -18,6 +18,20 @@ mkdir -p "$out"
 cp -r index.html print.html src data "$out/"
 git log -1 --format=%cI -- data > "$out/data/updated.txt"
 
+# Covers: downloaded ones (see scripts/fetch-covers.js), replaced by the
+# owner's own photos in covers/. covers/index.json lists what exists.
+cache=${COVERS_CACHE:-.covers-cache}
+mkdir -p "$out/covers"
+for src in "$cache" covers; do
+  if compgen -G "$src/*.jpg" > /dev/null; then cp "$src"/*.jpg "$out/covers/"; fi
+done
+node -e '
+  const fs = require("fs");
+  const slugs = fs.readdirSync(process.argv[1]).filter((f) => f.endsWith(".jpg")).map((f) => f.slice(0, -4)).sort();
+  fs.writeFileSync(process.argv[1] + "/index.json", JSON.stringify(slugs) + "\n");
+  console.log(`Covers: ${slugs.length}`);
+' "$out/covers"
+
 banner() {
   local n=$1
   cat <<EOF
@@ -42,8 +56,9 @@ for spec in "$@"; do
   # Only plain files: a symlink could point at files on the build machine.
   find "$dir" ! -type f ! -type d -delete
 
-  rm -rf "$dir/data"
+  rm -rf "$dir/data" "$dir/covers"
   cp -r "$out/data" "$dir/data"
+  cp -r "$out/covers" "$dir/covers"
 
   for page in "$dir/index.html" "$dir/print.html"; do
     [[ -f $page ]] || continue

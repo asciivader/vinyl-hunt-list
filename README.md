@@ -6,7 +6,8 @@ hunt list to take to the shops.
 **Site:** https://asciivader.github.io/vinyl-hunt-list/
 
 - **Want list:** searchable, grouped by genre section.
-- **Collection:** everything I already own, sortable and searchable.
+- **Collection:** everything I already own, sortable and searchable, with
+  album covers; click one for the big picture and details.
 - **Print sheet:** the want list on one US letter sheet, front and back, with a
   checkbox on each side of every title (left: found / bought, right: seen but
   passed).
@@ -55,6 +56,16 @@ Any of these gets a change onto the site:
   pressing details). Then tell Claude Code *"add the records in my inbox"*.
   It identifies them, checks with me, adds them and clears the photos.
   Nothing on the website changes until that's committed.
+
+**Covers** are downloaded automatically from the
+[Cover Art Archive](https://coverartarchive.org) when the site publishes. To
+use my own photo instead (say, my exact pressing):
+
+```sh
+npm run cover -- inbox/<photo>.jpg "Fleetwood Mac" "Rumours"
+```
+
+then commit and push. `npm run covers` fetches them locally for `npm start`.
 
 The collection labels the newest batch of additions (the latest `added`
 date) as **picked up recently**. When a newer batch is added, the label moves
@@ -125,6 +136,8 @@ The site is published free with GitHub Pages. One-time setup in the repo on gith
 | `data/` | The data files above |
 | `index.html`, `print.html`, `src/` | The site: plain HTML/CSS/JS, no build step |
 | `scripts/import.js` | CSV import (`npm run import`) |
+| `covers/` | My own cover photos (downloaded covers aren't stored in the repo) |
+| `scripts/fetch-covers.js`, `scripts/set-cover.js` | Cover download (`npm run covers`) and own-photo covers (`npm run cover`) |
 | `scripts/camera.js`, `tools/camera.html` | Local webcam page for photographing records (`npm run camera`) |
 | `scripts/build-site.sh` | Assembles the published site and pull request previews |
 | `scripts/validate.js`, `test/` | Data checks and unit tests (`npm run validate`, `npm test`) |

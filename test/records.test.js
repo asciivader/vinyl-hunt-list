@@ -87,3 +87,21 @@ test("groupWants lists artists alphabetically in each section, ignoring a leadin
   assert.deepEqual(artists.map(([a]) => a), ["Aerosmith", "The Clash", "Mötley Crüe", "Queen"]);
   assert.deepEqual(artists[3][1].map((t) => t.title), ["Greatest Hits", "Greatest Hits II"]);
 });
+
+test("coverSlug makes file-safe names with the same matching rules as recordKey", async () => {
+  const { coverSlug } = await import("../src/records.js");
+  assert.equal(coverSlug("Fleetwood Mac", "Rumours"), "fleetwood-mac--rumours");
+  assert.equal(coverSlug("The Cars", "The Cars"), "cars--cars");
+  assert.equal(coverSlug("Blue Öyster Cult", "Agents of Fortune"), coverSlug("Blue Oyster Cult", "Agents of Fortune"));
+  assert.match(coverSlug("Guns N' Roses", "Appetite for Destruction"), /^[a-z0-9-]+$/);
+});
+
+test("cover lookup builds MusicBrainz queries and only accepts confident matches", async () => {
+  const { searchQuery, pickReleaseGroup } = await import("../scripts/fetch-covers.js");
+  assert.equal(searchQuery("Fleetwood Mac", "Rumours"), 'releasegroup:"Rumours" AND artist:"Fleetwood Mac"');
+  assert.equal(searchQuery("Soundtrack", "Footloose"), 'releasegroup:"Footloose"');
+  assert.equal(searchQuery("A", 'Say "Hi"'), 'releasegroup:"Say \\"Hi\\"" AND artist:"A"');
+  assert.equal(pickReleaseGroup({ "release-groups": [{ id: "x", score: 100 }] }), "x");
+  assert.equal(pickReleaseGroup({ "release-groups": [{ id: "x", score: 60 }] }), null);
+  assert.equal(pickReleaseGroup({}), null);
+});

@@ -8,6 +8,8 @@
     "validate": "node scripts/validate.js",
     "import": "node scripts/import.js",
     "camera": "node scripts/camera.js",
+    "covers": "node scripts/fetch-covers.js",
+    "cover": "node scripts/set-cover.js",
     "test": "node --test"
   },
   "engines": {

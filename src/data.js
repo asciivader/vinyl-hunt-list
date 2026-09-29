@@ -20,14 +20,25 @@ async function fetchUpdated() {
   }
 }
 
+// covers/index.json lists the cover files that exist (see
+// scripts/build-site.sh). Missing index means no covers, not an error.
+async function fetchCovers() {
+  try {
+    return new Set(JSON.parse(await fetchText("covers/index.json")));
+  } catch {
+    return new Set();
+  }
+}
+
 export async function loadData() {
-  const [wants, collection, layout, updated] = await Promise.all([
+  const [wants, collection, layout, updated, covers] = await Promise.all([
     fetchText("data/wants.csv").then(parseCsvObjects),
     fetchText("data/collection.csv").then(parseCsvObjects),
     fetchText("data/layout.json").then(JSON.parse),
     fetchUpdated(),
+    fetchCovers(),
   ]);
-  return { wants: wants.rows, collection: collection.rows, layout, updated };
+  return { wants: wants.rows, collection: collection.rows, layout, updated, covers };
 }
 
 // Wants grouped for display: pages -> sections -> artists -> titles. Artists

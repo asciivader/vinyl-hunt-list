@@ -2,7 +2,7 @@
 // through data/*.csv in the GitHub repo (see README.md).
 
 import { loadData, groupWants } from "./data.js";
-import { artistSortName } from "./records.js";
+import { artistSortName, coverSlug } from "./records.js";
 
 // On GitHub Pages (<user>.github.io/<repo>/) link to the repo the site was
 // built from, so copies of this project link to themselves.
@@ -17,6 +17,7 @@ const state = {
   collection: [],
   layout: { pages: [] },
   updated: "",
+  covers: new Set(),
   section: "",
   wantQuery: "",
   ownedQuery: "",
@@ -131,6 +132,9 @@ function renderCollection() {
   const latest = state.collection.reduce((max, r) => (r.added > max ? r.added : max), "");
 
   const body = rows.map((r) => el("tr", {},
+    el("td", { class: "cover-cell" },
+      el("button", { type: "button", class: "cover-button", "aria-label": `Show ${r.title}`, onclick: () => showRecord(r) },
+        coverImage(r, "thumb"))),
     el("td", { class: "artist-cell" }, r.artist),
     el("td", {}, r.title),
     el("td", { class: "muted" }, r.year),
@@ -141,8 +145,41 @@ function renderCollection() {
       [r.condition, r.notes].filter(Boolean).join(" · ") || null),
     el("td", { class: "muted date" }, r.added),
   ));
-  $("#owned-rows").replaceChildren(...(body.length ? body : [el("tr", {}, el("td", { colspan: 7, class: "empty" },
+  $("#owned-rows").replaceChildren(...(body.length ? body : [el("tr", {}, el("td", { colspan: 8, class: "empty" },
     state.collection.length ? "Nothing matches that search." : "No records yet."))]));
+}
+
+/* ---------- Covers ---------- */
+
+const coverUrl = (r) => {
+  const slug = coverSlug(r.artist, r.title);
+  return state.covers.has(slug) ? `covers/${slug}.jpg` : null;
+};
+
+// The cover, or a plain record-shaped placeholder when there isn't one.
+function coverImage(r, size) {
+  const src = coverUrl(r);
+  return src
+    ? el("img", { class: `cover ${size}`, src, alt: `${r.artist} – ${r.title} cover`, loading: "lazy", decoding: "async" })
+    : el("span", { class: `cover ${size} no-cover`, role: "img", "aria-label": "No cover yet" });
+}
+
+function showRecord(r) {
+  const details = [
+    [r.year, r.format].filter(Boolean).join(" · "),
+    [r.label, r.catalog].filter(Boolean).join(" · "),
+    [r.condition, r.notes].filter(Boolean).join(" · "),
+  ].filter(Boolean);
+  const dialog = $("#record-dialog");
+  dialog.replaceChildren(
+    el("button", { type: "button", class: "close", "aria-label": "Close", onclick: () => dialog.close() }, "×"),
+    coverImage(r, "large"),
+    el("h2", {}, r.title),
+    el("p", { class: "by" }, r.artist),
+    ...details.map((d) => el("p", { class: "detail" }, d)),
+    ...(coverUrl(r) ? [] : [el("p", { class: "detail" }, "No cover picture yet.")]),
+  );
+  dialog.showModal();
 }
 
 /* ---------- Shell ---------- */
@@ -188,6 +225,7 @@ $("#owned-sort").addEventListener("change", (e) => {
   renderCollection();
 });
 window.addEventListener("hashchange", showView);
+$("#record-dialog").addEventListener("click", (e) => { if (e.target === e.currentTarget) e.currentTarget.close(); });
 showView();
 
 try {

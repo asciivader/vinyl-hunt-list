@@ -56,6 +56,25 @@ jobs:
           echo "specs=$specs" >> "$GITHUB_OUTPUT"
           echo "Previews:${specs:- none}"
 
+      # Album covers from the Cover Art Archive, cached between runs so each
+      # is downloaded once. A lookup failure never blocks publishing.
+      - name: Restore cover cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .covers-cache
+          key: covers-${{ github.run_id }}
+          restore-keys: covers-
+      - name: Fetch missing covers
+        continue-on-error: true
+        timeout-minutes: 15
+        run: node scripts/fetch-covers.js --cache .covers-cache
+      - name: Save cover cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: .covers-cache
+          key: covers-${{ github.run_id }}
+
       - name: Build site
         run: bash scripts/build-site.sh ${{ steps.prs.outputs.specs }}
 

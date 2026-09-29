@@ -48,6 +48,14 @@ Common owner requests:
   checks, commit and push, then delete the processed photos from `inbox/`.
   Never commit photos.
 
+- "Use this photo as the cover for X": `npm run cover -- <photo> "<artist>" "<title>"`
+  copies it to `covers/<slug>.jpg`, which replaces any downloaded cover.
+
+Covers: the collection shows a cover for each record. Downloaded ones come
+from the Cover Art Archive (via MusicBrainz) during publishing and are cached
+by the workflow, not committed; the owner's own photos live in `covers/`,
+named by `coverSlug(artist, title)`. Like `data/`, `covers/` is owner-only.
+
 "Picked up recently" is not a note: the site shows that label on every
 collection record with the newest `added` date, so it moves to each new batch
 by itself. Never type it into `notes`, and leave `added` empty for records
@@ -75,8 +83,9 @@ diffs stay reviewable.
 
 1. Start from an up-to-date `main` and create a branch named for the change,
    e.g. `design/bigger-album-cards`. Never push to `main`.
-2. Don't touch anything in `data/`. The lists are the owner's alone, and the
-   `lists-owner-only` check fails any collaborator pull request that changes them.
+2. Don't touch anything in `data/` or `covers/`. The lists and cover photos are
+   the owner's alone, and the `lists-owner-only` check fails any collaborator
+   pull request that changes them.
 3. Keep the site view-only: no forms, buttons or code that change data.
 4. Keep the look working in light and dark mode and on a phone (~390px wide),
    and keep `print.html` to exactly two pages (see below).
@@ -109,6 +118,9 @@ notes, or ask the owner what to cut. Don't shrink the type.
 - `scripts/camera.js` + `tools/camera.html` — `npm run camera`, a local-only
   webcam page that saves snapshots to `inbox/` (git-ignored). It is not part
   of the published site and must never be.
+- `scripts/fetch-covers.js` downloads missing covers into `.covers-cache/`
+  (`npm run covers`; the publish workflow runs it). `scripts/set-cover.js` is
+  `npm run cover`.
 - `scripts/build-site.sh` assembles `_site/` for GitHub Pages: main at the root,
   open pull requests at `previews/pr-<N>/` (run by `.github/workflows/pages.yml`).
 - `server.js` — `npm start` is a view-only local preview on http://localhost:4321.

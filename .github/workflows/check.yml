@@ -19,8 +19,8 @@ jobs:
       - run: npm test
       - run: npm run validate
 
-  # The lists are the owner's alone: a pull request from anyone else fails
-  # this check if it changes anything in data/.
+  # The lists and cover photos are the owner's alone: a pull request from
+  # anyone else fails this check if it changes anything in data/ or covers/.
   lists-owner-only:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
@@ -38,7 +38,7 @@ jobs:
             echo "Pull request by the owner; list changes allowed."
             exit 0
           fi
-          changed=$(git diff --name-only "$BASE"...HEAD -- data/)
+          changed=$(git diff --name-only "$BASE"...HEAD -- data/ covers/)
           if [ -n "$changed" ]; then
             echo "::error::Only $OWNER can change the lists. This pull request changes:"
             echo "$changed"

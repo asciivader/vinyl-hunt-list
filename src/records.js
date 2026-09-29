@@ -17,6 +17,12 @@ export function recordKey(artist, title) {
   return `${norm(artist)}|${norm(title)}`;
 }
 
+// File name (without .jpg) of a record's cover in covers/, e.g.
+// "fleetwood-mac--rumours". Same matching rules as recordKey.
+export function coverSlug(artist, title) {
+  return recordKey(artist, title).replace(/ /g, "-").replace("|", "--");
+}
+
 // Artist order everywhere on the site: alphabetical, ignoring a leading "The"
 // (The Clash files under C), accents and case.
 const artistCollator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
