@@ -63,7 +63,6 @@ async function main() {
   }
 
   let found = 0, missed = 0, failed = 0;
-  const missedNames = [];
   for (const r of todo.slice(0, limit)) {
     try {
       await sleep(1100); // MusicBrainz allows one request per second
@@ -75,7 +74,6 @@ async function main() {
       if (!art || !art.ok) {
         misses[r.slug] = today;
         missed++;
-        missedNames.push(`${r.artist} – ${r.title}`);
         console.log(`  no cover: ${r.artist} – ${r.title}`);
         continue;
       }
@@ -95,7 +93,9 @@ async function main() {
   console.log(`Covers: ${summary}.`);
   if (process.env.GITHUB_ACTIONS) {
     console.log(`::notice title=Covers::${summary}`);
-    if (missedNames.length) console.log(`::notice title=No cover found (photograph these)::${missedNames.join("; ")}`);
+    const names = new Map(rows.map((r) => [coverSlug(r.artist, r.title), `${r.artist} – ${r.title}`]));
+    const without = Object.keys(misses).filter((slug) => names.has(slug)).map((slug) => names.get(slug)).sort();
+    if (without.length) console.log(`::notice title=No cover found (photograph these)::${without.join("; ")}`);
   }
 }
 
