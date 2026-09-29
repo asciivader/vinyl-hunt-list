@@ -60,8 +60,12 @@ export function pickReleaseGroups(response, format = "") {
 
 // The search a downloaded cover was found with, so a cover is fetched again
 // when its record's search changes (a better rule, or a corrected title).
-// Covers from before this was recorded used the plain first search.
+// Covers from before this was recorded used the plain first search, except
+// that titles with a (…) note were matched without it and may show a
+// same-named album (Weezer's Green Album art for the Blue Album), so those
+// are fetched again.
 function legacyQuery(artist, title) {
+  if (/[([]/.test(title)) return null;
   const who = NO_ARTIST.has(artist.trim().toLowerCase()) ? "" : ` AND artist:${quote(artist)}`;
   return `releasegroup:${quote(title)}${who}`;
 }
