@@ -49,7 +49,11 @@ Common owner requests:
   Never commit photos.
 
 - "Use this photo as the cover for X": `npm run cover -- <photo> "<artist>" "<title>"`
-  copies it to `covers/<slug>.jpg`, which replaces any downloaded cover.
+  copies it to `covers/<slug>.jpg`, which replaces any downloaded cover. When
+  the owner has several copies of a record (rows told apart by `notes`) and
+  the photo is of one of them, add that row's notes as a fourth argument; the
+  cover then applies to that copy only (`editionCoverSlug`). Changing that
+  row's notes later means renaming its cover file to match.
 
 Covers: the collection shows a cover for each record. Downloaded ones come
 from the Cover Art Archive (via MusicBrainz) during publishing and are cached

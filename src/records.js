@@ -23,6 +23,15 @@ export function coverSlug(artist, title) {
   return recordKey(artist, title).replace(/ /g, "-").replace("|", "--");
 }
 
+// Cover file for one specific copy, when the collection has several editions
+// of the same record told apart by their notes, e.g.
+// "guns-n-roses--appetite-for-destruction--original-pressing-alternate-cover".
+// The site uses it when it exists, and the plain coverSlug otherwise.
+export function editionCoverSlug(artist, title, notes) {
+  const edition = recordKey("", notes).slice(1).replace(/ /g, "-");
+  return edition ? `${coverSlug(artist, title)}--${edition}` : coverSlug(artist, title);
+}
+
 // Artist order everywhere on the site: alphabetical, ignoring a leading "The"
 // (The Clash files under C), accents and case.
 const artistCollator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });

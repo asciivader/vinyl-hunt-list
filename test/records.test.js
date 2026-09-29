@@ -104,7 +104,8 @@ test("cover lookup tries exact, trimmed and loose searches, preferring the right
     'releasegroup:"Weezer" AND artist:"Weezer"',
   ]);
   assert.deepEqual(searchQueries("Eagles", "Eagles Greatest Hits Volume 2").at(-1), 'releasegroup:(Eagles Greatest Hits Volume 2) AND artist:"Eagles"');
-  assert.deepEqual(searchQueries("Soundtrack", "Footloose"), ['releasegroup:"Footloose"']);
+  assert.deepEqual(searchQueries("Soundtrack", "Flashdance"), ['releasegroup:"Flashdance" AND secondarytype:soundtrack']);
+  assert.equal(searchQueries("Various Artists", "Morningtown Ride")[0], 'releasegroup:"Morningtown Ride"');
   assert.equal(searchQueries("A", 'Say "Hi"')[0], 'releasegroup:"Say \\"Hi\\"" AND artist:"A"');
   const response = { "release-groups": [
     { id: "single", score: 100, "primary-type": "Single" },
@@ -114,4 +115,13 @@ test("cover lookup tries exact, trimmed and loose searches, preferring the right
   assert.deepEqual(pickReleaseGroups(response, "LP"), ["album", "single"]);
   assert.deepEqual(pickReleaseGroups(response, "12-inch single"), ["single", "album"]);
   assert.deepEqual(pickReleaseGroups({}), []);
+});
+
+test("editionCoverSlug gives each noted copy its own cover name", async () => {
+  const { editionCoverSlug, coverSlug } = await import("../src/records.js");
+  assert.equal(
+    editionCoverSlug("Guns N' Roses", "Appetite for Destruction", "original pressing, alternate cover"),
+    "guns-n-roses--appetite-for-destruction--original-pressing-alternate-cover",
+  );
+  assert.equal(editionCoverSlug("Fleetwood Mac", "Rumours", ""), coverSlug("Fleetwood Mac", "Rumours"));
 });

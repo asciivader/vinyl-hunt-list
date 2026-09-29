@@ -2,7 +2,7 @@
 // through data/*.csv in the GitHub repo (see README.md).
 
 import { loadData, groupWants } from "./data.js";
-import { artistSortName, coverSlug } from "./records.js";
+import { artistSortName, coverSlug, editionCoverSlug } from "./records.js";
 
 // On GitHub Pages (<user>.github.io/<repo>/) link to the repo the site was
 // built from, so copies of this project link to themselves.
@@ -151,9 +151,11 @@ function renderCollection() {
 
 /* ---------- Covers ---------- */
 
+// A copy's own edition cover if there is one, else the record's cover.
 const coverUrl = (r) => {
-  const slug = coverSlug(r.artist, r.title);
-  return state.covers.has(slug) ? `covers/${slug}.jpg` : null;
+  const slug = [editionCoverSlug(r.artist, r.title, r.notes), coverSlug(r.artist, r.title)]
+    .find((s) => state.covers.has(s));
+  return slug ? `covers/${slug}.jpg` : null;
 };
 
 // The cover, or a plain record-shaped placeholder when there isn't one.

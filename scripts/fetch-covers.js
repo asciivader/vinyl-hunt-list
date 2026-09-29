@@ -30,7 +30,11 @@ const MATCHER_VERSION = 2;
 // "Weezer" there), then the title's words in any order ("Greatest Hits
 // Volume 2" vs "Greatest Hits, Vol. 2").
 export function searchQueries(artist, title) {
-  const who = NO_ARTIST.has(artist.trim().toLowerCase()) ? "" : ` AND artist:${quote(artist)}`;
+  const name = artist.trim().toLowerCase();
+  // Soundtracks are filed under the artist "Soundtrack": search soundtrack
+  // releases only, or "Flashdance" finds the single instead of the album.
+  const who = name === "soundtrack" ? " AND secondarytype:soundtrack"
+    : NO_ARTIST.has(name) ? "" : ` AND artist:${quote(artist)}`;
   const bare = title.replace(/\s*[([][^)\]]*[)\]]\s*/g, " ").replace(/\s+/g, " ").trim();
   const words = bare.replace(/[^\p{L}\p{N}\s]/gu, " ").split(/\s+/).filter(Boolean);
   const queries = [`releasegroup:${quote(title)}${who}`];
@@ -48,6 +52,14 @@ export function pickReleaseGroups(response, format = "") {
     .map((g, i) => ({ id: g.id, rank: (g["primary-type"] === want ? 0 : 1) * 1000 + i }))
     .sort((a, b) => a.rank - b.rank)
     .map((g) => g.id);
+}
+
+// The search a downloaded cover was found with, so a cover is fetched again
+// when its record's search changes (a better rule, or a corrected title).
+// Covers from before this was recorded used the plain first search.
+function legacyQuery(artist, title) {
+  const who = NO_ARTIST.has(artist.trim().toLowerCase()) ? "" : ` AND artist:${quote(artist)}`;
+  return `releasegroup:${quote(title)}${who}`;
 }
 
 async function findCover(r) {
@@ -81,6 +93,8 @@ async function main() {
   const missesFile = new URL("misses.json", cacheDir);
   const saved = await readFile(missesFile, "utf8").then(JSON.parse, () => ({}));
   const misses = saved.version === MATCHER_VERSION ? saved.misses : {};
+  const foundFile = new URL("found.json", cacheDir);
+  const foundWith = await readFile(foundFile, "utf8").then(JSON.parse, () => ({}));
   const today = new Date().toISOString().slice(0, 10);
   const stale = (date) => (Date.parse(today) - Date.parse(date)) / 864e5 >= RETRY_MISSES_AFTER_DAYS;
 
@@ -92,7 +106,8 @@ async function main() {
     if (seen.has(slug)) continue;
     seen.add(slug);
     if (await exists(new URL(`../covers/${slug}.jpg`, import.meta.url))) continue; // own photo
-    if (await exists(new URL(`${slug}.jpg`, cacheDir))) continue;
+    const query = searchQueries(r.artist, r.title)[0];
+    if (await exists(new URL(`${slug}.jpg`, cacheDir)) && (foundWith[slug] ?? legacyQuery(r.artist, r.title)) === query) continue;
     if (misses[slug] && !stale(misses[slug])) continue;
     todo.push({ ...r, slug });
   }
@@ -108,6 +123,7 @@ async function main() {
         continue;
       }
       await writeFile(new URL(`${r.slug}.jpg`, cacheDir), cover);
+      foundWith[r.slug] = searchQueries(r.artist, r.title)[0];
       delete misses[r.slug];
       found++;
       console.log(`  cover: ${r.artist} – ${r.title}`);
@@ -118,6 +134,7 @@ async function main() {
     }
   }
   await writeFile(missesFile, JSON.stringify({ version: MATCHER_VERSION, misses }, null, 1) + "\n");
+  await writeFile(foundFile, JSON.stringify(foundWith, null, 1) + "\n");
   const left = Math.max(0, todo.length - limit);
   const summary = `${found} downloaded, ${missed} not found, ${failed} errors${left ? `, ${left} left for next run` : ""}`;
   console.log(`Covers: ${summary}.`);
