@@ -128,6 +128,7 @@ async function main() {
   }
 
   let found = 0, missed = 0, failed = 0;
+  const failedNames = [];
   for (const r of todo.slice(0, limit)) {
     try {
       const cover = await findCover(r);
@@ -145,6 +146,7 @@ async function main() {
       console.log(`  cover: ${r.artist} – ${r.title}`);
     } catch (err) {
       failed++; // network trouble: try again next run
+      failedNames.push(`${r.artist} – ${r.title} (${err.message})`);
       await sleep(3000); // back off if MusicBrainz is asking us to slow down
       console.log(`  error (will retry): ${r.artist} – ${r.title}: ${err.message}`);
     }
@@ -159,6 +161,7 @@ async function main() {
     const names = new Map(rows.map((r) => [coverSlug(r.artist, r.title), `${r.artist} – ${r.title}`]));
     const without = Object.keys(misses).filter((slug) => names.has(slug)).map((slug) => names.get(slug)).sort();
     if (without.length) console.log(`::notice title=No cover found (photograph these)::${without.join("; ")}`);
+    if (failedNames.length) console.log(`::notice title=Errors (retried next publish)::${failedNames.join("; ")}`);
   }
 }
 
