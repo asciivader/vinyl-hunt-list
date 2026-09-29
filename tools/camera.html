@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Record Camera</title>
+<style>
+  :root {
+    --bg: #131312;
+    --surface: #1c1c1b;
+    --ink: #ededeb;
+    --muted: #a6a6a2;
+    --rule: #333331;
+    --accent: #ededeb;
+    --sans: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --serif: Georgia, "Times New Roman", serif;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 var(--sans); }
+  main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 40px; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 16px; margin-bottom: 14px; }
+  h1 { margin: 0; font: bold 26px/1.1 var(--serif); }
+  .hint { color: var(--muted); font-size: 14px; }
+  .stage {
+    position: relative;
+    background: #000;
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    overflow: hidden;
+    aspect-ratio: 4 / 3;
+    max-height: 70vh;
+    margin: 0 auto;
+  }
+  video { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .guide {
+    position: absolute;
+    inset: 50% auto auto 50%;
+    width: min(70%, 70vh);
+    aspect-ratio: 1;
+    transform: translate(-50%, -50%);
+    border: 2px dashed rgba(255, 255, 255, 0.45);
+    border-radius: 4px;
+    pointer-events: none;
+  }
+  .flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
+  .flash.on { opacity: 0.7; transition: none; }
+  .message {
+    position: absolute; inset: 0; display: grid; place-items: center; padding: 24px;
+    text-align: center; color: var(--muted); background: #000;
+  }
+  .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 14px 0; }
+  select, button { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--rule); border-radius: 4px; padding: 8px 12px; }
+  button.snap { background: var(--accent); color: #131312; border-color: var(--accent); font-weight: 700; padding: 10px 22px; }
+  button.snap:disabled { opacity: 0.4; }
+  kbd { border: 1px solid var(--rule); border-radius: 3px; padding: 0 5px; font-size: 12px; }
+  .count { margin-left: auto; color: var(--muted); }
+  .shots { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+  .shots figure { margin: 0; }
+  .shots img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 4px; border: 1px solid var(--rule); display: block; }
+  .shots figcaption { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .next { margin-top: 18px; padding: 12px 14px; border: 1px solid var(--rule); border-radius: 6px; color: var(--muted); }
+  .next strong { color: var(--ink); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Record camera</h1>
+    <span class="hint">Hold a record inside the box and press <kbd>Space</kbd>. Add a shot of the back or the label for pressing details.</span>
+  </header>
+
+  <div class="stage">
+    <video id="video" autoplay playsinline muted></video>
+    <div class="guide"></div>
+    <div class="flash" id="flash"></div>
+    <div class="message" id="message">Starting camera… allow camera access if your browser asks.</div>
+  </div>
+
+  <div class="controls">
+    <label>Camera <select id="cameras"></select></label>
+    <button class="snap" id="snap" type="button" disabled>Snap (Space)</button>
+    <span class="count" id="count"></span>
+  </div>
+
+  <div class="shots" id="shots"></div>
+
+  <p class="next">Done? Tell Claude Code on this computer: <strong>"add the records in my inbox"</strong>.
+  Say whether they're new purchases or records you already had.</p>
+</main>
+
+<script>
+const video = document.getElementById("video");
+const select = document.getElementById("cameras");
+const snapButton = document.getElementById("snap");
+const message = document.getElementById("message");
+let stream;
+
+const remember = (id) => { try { localStorage.setItem("camera", id); } catch {} };
+const remembered = () => { try { return localStorage.getItem("camera"); } catch { return null; } };
+
+async function start(deviceId) {
+  stream?.getTracks().forEach((t) => t.stop());
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { deviceId: deviceId ? { exact: deviceId } : undefined, width: { ideal: 1920 }, height: { ideal: 1440 } },
+      audio: false,
+    });
+  } catch (err) {
+    message.hidden = false;
+    message.textContent = `Couldn't open the camera (${err.name}). Check that one is connected and that this browser is allowed to use it.`;
+    snapButton.disabled = true;
+    return;
+  }
+  video.srcObject = stream;
+  message.hidden = true;
+  snapButton.disabled = false;
+  const active = stream.getVideoTracks()[0]?.getSettings().deviceId;
+  await listCameras(active);
+  if (active) remember(active);
+}
+
+async function listCameras(active) {
+  const cams = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "videoinput");
+  select.replaceChildren(...cams.map((c, i) => new Option(c.label || `Camera ${i + 1}`, c.deviceId, false, c.deviceId === active)));
+}
+
+async function refreshCount() {
+  try {
+    const photos = await (await fetch("/inbox")).json();
+    document.getElementById("count").textContent = `${photos.length} photo${photos.length === 1 ? "" : "s"} in inbox`;
+  } catch {}
+}
+
+async function snap() {
+  if (snapButton.disabled || !video.videoWidth) return;
+  snapButton.disabled = true;
+  const canvas = document.createElement("canvas");
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext("2d").drawImage(video, 0, 0);
+  const flash = document.getElementById("flash");
+  flash.classList.add("on");
+  setTimeout(() => flash.classList.remove("on"), 60);
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.92));
+  try {
+    const res = await fetch("/snap", { method: "POST", headers: { "Content-Type": "image/jpeg" }, body: blob });
+    if (!res.ok) throw new Error(await res.text());
+    const { name } = await res.json();
+    const fig = document.createElement("figure");
+    const img = new Image();
+    img.src = URL.createObjectURL(blob);
+    img.alt = name;
+    const cap = document.createElement("figcaption");
+    cap.textContent = name.slice(11, 19).replace(/-/g, ":");
+    fig.append(img, cap);
+    document.getElementById("shots").prepend(fig);
+  } catch (err) {
+    alert(`Couldn't save the photo: ${err.message}`);
+  }
+  snapButton.disabled = false;
+  refreshCount();
+}
+
+snapButton.addEventListener("click", snap);
+document.addEventListener("keydown", (e) => {
+  if (e.code === "Space" && e.target === document.body) { e.preventDefault(); snap(); }
+});
+select.addEventListener("change", () => start(select.value));
+
+start(remembered());
+refreshCount();
+</script>
+</body>
+</html>

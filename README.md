@@ -45,6 +45,17 @@ Any of these gets a change onto the site:
   or a Discogs export), so none of them show as "picked up recently"; it
   ignores any dates in the file.
 
+- **Photograph them** on the computer with Claude Code:
+
+  ```sh
+  npm run camera        # opens a webcam page on this computer only
+  ```
+
+  Hold each record up and press Space (add a shot of the back or label for
+  pressing details). Then tell Claude Code *"add the records in my inbox"*.
+  It identifies them, checks with me, adds them and clears the photos.
+  Nothing on the website changes until that's committed.
+
 The collection labels the newest batch of additions (the latest `added`
 date) as **picked up recently**. When a newer batch is added, the label moves
 to it automatically.
@@ -114,6 +125,7 @@ The site is published free with GitHub Pages. One-time setup in the repo on gith
 | `data/` | The data files above |
 | `index.html`, `print.html`, `src/` | The site: plain HTML/CSS/JS, no build step |
 | `scripts/import.js` | CSV import (`npm run import`) |
+| `scripts/camera.js`, `tools/camera.html` | Local webcam page for photographing records (`npm run camera`) |
 | `scripts/build-site.sh` | Assembles the published site and pull request previews |
 | `scripts/validate.js`, `test/` | Data checks and unit tests (`npm run validate`, `npm test`) |
 | `server.js` | Local preview (`npm start`) |

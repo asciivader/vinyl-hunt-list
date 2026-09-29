@@ -7,6 +7,7 @@
     "start": "node server.js",
     "validate": "node scripts/validate.js",
     "import": "node scripts/import.js",
+    "camera": "node scripts/camera.js",
     "test": "node --test"
   },
   "engines": {

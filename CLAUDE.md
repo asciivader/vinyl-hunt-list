@@ -37,6 +37,17 @@ Common owner requests:
 - "Here are records I already own" (listed in chat, not bought just now):
   add them to `collection.csv` with `added` left empty.
 
+- "Add the records in my inbox": the owner photographed records with the
+  local camera page (`npm run camera`, photos in `inbox/`). Look at every
+  photo, identify each record (artist, title, original year; label, catalog
+  number and pressing when a back cover or label is shown), and group photos
+  of the same record. Show the owner the list, including anything you're
+  unsure of, and ask whether they're new purchases (added = today) or records
+  they already had (added empty) if they haven't said. After they confirm,
+  add them like any other records (removing want-list matches), run the
+  checks, commit and push, then delete the processed photos from `inbox/`.
+  Never commit photos.
+
 "Picked up recently" is not a note: the site shows that label on every
 collection record with the newest `added` date, so it moves to each new batch
 by itself. Never type it into `notes`, and leave `added` empty for records
@@ -95,6 +106,9 @@ notes, or ask the owner what to cut. Don't shrink the type.
   (shared by browser and scripts), `src/data.js` loading, `src/app.js` the
   viewer, `src/print.js` the printed sheet.
 - `scripts/import.js` merges an owned-records CSV (`npm run import`).
+- `scripts/camera.js` + `tools/camera.html` — `npm run camera`, a local-only
+  webcam page that saves snapshots to `inbox/` (git-ignored). It is not part
+  of the published site and must never be.
 - `scripts/build-site.sh` assembles `_site/` for GitHub Pages: main at the root,
   open pull requests at `previews/pr-<N>/` (run by `.github/workflows/pages.yml`).
 - `server.js` — `npm start` is a view-only local preview on http://localhost:4321.
