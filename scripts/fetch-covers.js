@@ -63,6 +63,7 @@ async function main() {
   }
 
   let found = 0, missed = 0, failed = 0;
+  const missedNames = [];
   for (const r of todo.slice(0, limit)) {
     try {
       await sleep(1100); // MusicBrainz allows one request per second
@@ -74,6 +75,7 @@ async function main() {
       if (!art || !art.ok) {
         misses[r.slug] = today;
         missed++;
+        missedNames.push(`${r.artist} – ${r.title}`);
         console.log(`  no cover: ${r.artist} – ${r.title}`);
         continue;
       }
@@ -83,6 +85,7 @@ async function main() {
       console.log(`  cover: ${r.artist} – ${r.title}`);
     } catch (err) {
       failed++; // network trouble: try again next run
+      await sleep(3000); // back off if MusicBrainz is asking us to slow down
       console.log(`  error (will retry): ${r.artist} – ${r.title}: ${err.message}`);
     }
   }
@@ -90,7 +93,10 @@ async function main() {
   const left = Math.max(0, todo.length - limit);
   const summary = `${found} downloaded, ${missed} not found, ${failed} errors${left ? `, ${left} left for next run` : ""}`;
   console.log(`Covers: ${summary}.`);
-  if (process.env.GITHUB_ACTIONS) console.log(`::notice title=Covers::${summary}`);
+  if (process.env.GITHUB_ACTIONS) {
+    console.log(`::notice title=Covers::${summary}`);
+    if (missedNames.length) console.log(`::notice title=No cover found (photograph these)::${missedNames.join("; ")}`);
+  }
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) await main();
