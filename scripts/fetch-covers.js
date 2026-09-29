@@ -21,17 +21,51 @@ const exists = (p) => access(p).then(() => true, () => false);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const quote = (s) => `"${String(s).replace(/[\\"]/g, "\\$&")}"`;
 
-// Lucene query for a MusicBrainz release-group search.
-export function searchQuery(artist, title) {
-  const parts = [`releasegroup:${quote(title)}`];
-  if (!NO_ARTIST.has(artist.trim().toLowerCase())) parts.push(`artist:${quote(artist)}`);
-  return parts.join(" AND ");
+// Bump when the matching rules change, so earlier "not found" results are
+// retried with the new rules.
+const MATCHER_VERSION = 2;
+
+// MusicBrainz searches to try, most exact first: the full title as a
+// phrase, the title without (…) or […] asides ("Weezer (Blue Album)" is
+// "Weezer" there), then the title's words in any order ("Greatest Hits
+// Volume 2" vs "Greatest Hits, Vol. 2").
+export function searchQueries(artist, title) {
+  const who = NO_ARTIST.has(artist.trim().toLowerCase()) ? "" : ` AND artist:${quote(artist)}`;
+  const bare = title.replace(/\s*[([][^)\]]*[)\]]\s*/g, " ").replace(/\s+/g, " ").trim();
+  const words = bare.replace(/[^\p{L}\p{N}\s]/gu, " ").split(/\s+/).filter(Boolean);
+  const queries = [`releasegroup:${quote(title)}${who}`];
+  if (bare && bare !== title) queries.push(`releasegroup:${quote(bare)}${who}`);
+  if (words.length > 1) queries.push(`releasegroup:(${words.join(" ")})${who}`);
+  return queries;
 }
 
-// The best confident match from a search response, or null.
-export function pickReleaseGroup(response) {
-  const top = response?.["release-groups"]?.[0];
-  return top && Number(top.score) >= MIN_SCORE ? top.id : null;
+// Confident matches from a search response, best first: albums first (or
+// singles, for records filed as singles), then by search score.
+export function pickReleaseGroups(response, format = "") {
+  const want = /single/i.test(format) ? "Single" : "Album";
+  return (response?.["release-groups"] ?? [])
+    .filter((g) => Number(g.score) >= MIN_SCORE)
+    .map((g, i) => ({ id: g.id, rank: (g["primary-type"] === want ? 0 : 1) * 1000 + i }))
+    .sort((a, b) => a.rank - b.rank)
+    .map((g) => g.id);
+}
+
+async function findCover(r) {
+  const tried = new Set();
+  for (const query of searchQueries(r.artist, r.title)) {
+    await sleep(1100); // MusicBrainz allows one request per second
+    const url = `https://musicbrainz.org/ws/2/release-group/?fmt=json&limit=5&query=${encodeURIComponent(query)}`;
+    const res = await fetch(url, { headers: { "User-Agent": USER_AGENT, Accept: "application/json" } });
+    if (!res.ok) throw new Error(`MusicBrainz ${res.status}`);
+    for (const id of pickReleaseGroups(await res.json(), r.format).slice(0, 3)) {
+      if (tried.has(id)) continue;
+      tried.add(id);
+      const art = await fetch(`https://coverartarchive.org/release-group/${id}/front-500`, { headers: { "User-Agent": USER_AGENT } });
+      if (art.ok) return Buffer.from(await art.arrayBuffer());
+      if (art.status !== 404) throw new Error(`Cover Art Archive ${art.status}`);
+    }
+  }
+  return null;
 }
 
 async function main() {
@@ -45,7 +79,8 @@ async function main() {
   await mkdir(cacheDir, { recursive: true });
 
   const missesFile = new URL("misses.json", cacheDir);
-  const misses = await readFile(missesFile, "utf8").then(JSON.parse, () => ({}));
+  const saved = await readFile(missesFile, "utf8").then(JSON.parse, () => ({}));
+  const misses = saved.version === MATCHER_VERSION ? saved.misses : {};
   const today = new Date().toISOString().slice(0, 10);
   const stale = (date) => (Date.parse(today) - Date.parse(date)) / 864e5 >= RETRY_MISSES_AFTER_DAYS;
 
@@ -65,19 +100,14 @@ async function main() {
   let found = 0, missed = 0, failed = 0;
   for (const r of todo.slice(0, limit)) {
     try {
-      await sleep(1100); // MusicBrainz allows one request per second
-      const url = `https://musicbrainz.org/ws/2/release-group/?fmt=json&limit=3&query=${encodeURIComponent(searchQuery(r.artist, r.title))}`;
-      const res = await fetch(url, { headers: { "User-Agent": USER_AGENT, Accept: "application/json" } });
-      if (!res.ok) throw new Error(`MusicBrainz ${res.status}`);
-      const id = pickReleaseGroup(await res.json());
-      const art = id && await fetch(`https://coverartarchive.org/release-group/${id}/front-500`, { headers: { "User-Agent": USER_AGENT } });
-      if (!art || !art.ok) {
+      const cover = await findCover(r);
+      if (!cover) {
         misses[r.slug] = today;
         missed++;
         console.log(`  no cover: ${r.artist} – ${r.title}`);
         continue;
       }
-      await writeFile(new URL(`${r.slug}.jpg`, cacheDir), Buffer.from(await art.arrayBuffer()));
+      await writeFile(new URL(`${r.slug}.jpg`, cacheDir), cover);
       delete misses[r.slug];
       found++;
       console.log(`  cover: ${r.artist} – ${r.title}`);
@@ -87,7 +117,7 @@ async function main() {
       console.log(`  error (will retry): ${r.artist} – ${r.title}: ${err.message}`);
     }
   }
-  await writeFile(missesFile, JSON.stringify(misses, null, 1) + "\n");
+  await writeFile(missesFile, JSON.stringify({ version: MATCHER_VERSION, misses }, null, 1) + "\n");
   const left = Math.max(0, todo.length - limit);
   const summary = `${found} downloaded, ${missed} not found, ${failed} errors${left ? `, ${left} left for next run` : ""}`;
   console.log(`Covers: ${summary}.`);

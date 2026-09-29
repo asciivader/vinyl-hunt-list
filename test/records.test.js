@@ -96,12 +96,22 @@ test("coverSlug makes file-safe names with the same matching rules as recordKey"
   assert.match(coverSlug("Guns N' Roses", "Appetite for Destruction"), /^[a-z0-9-]+$/);
 });
 
-test("cover lookup builds MusicBrainz queries and only accepts confident matches", async () => {
-  const { searchQuery, pickReleaseGroup } = await import("../scripts/fetch-covers.js");
-  assert.equal(searchQuery("Fleetwood Mac", "Rumours"), 'releasegroup:"Rumours" AND artist:"Fleetwood Mac"');
-  assert.equal(searchQuery("Soundtrack", "Footloose"), 'releasegroup:"Footloose"');
-  assert.equal(searchQuery("A", 'Say "Hi"'), 'releasegroup:"Say \\"Hi\\"" AND artist:"A"');
-  assert.equal(pickReleaseGroup({ "release-groups": [{ id: "x", score: 100 }] }), "x");
-  assert.equal(pickReleaseGroup({ "release-groups": [{ id: "x", score: 60 }] }), null);
-  assert.equal(pickReleaseGroup({}), null);
+test("cover lookup tries exact, trimmed and loose searches, preferring the right type", async () => {
+  const { searchQueries, pickReleaseGroups } = await import("../scripts/fetch-covers.js");
+  assert.deepEqual(searchQueries("Fleetwood Mac", "Rumours"), ['releasegroup:"Rumours" AND artist:"Fleetwood Mac"']);
+  assert.deepEqual(searchQueries("Weezer", "Weezer (Blue Album)"), [
+    'releasegroup:"Weezer (Blue Album)" AND artist:"Weezer"',
+    'releasegroup:"Weezer" AND artist:"Weezer"',
+  ]);
+  assert.deepEqual(searchQueries("Eagles", "Eagles Greatest Hits Volume 2").at(-1), 'releasegroup:(Eagles Greatest Hits Volume 2) AND artist:"Eagles"');
+  assert.deepEqual(searchQueries("Soundtrack", "Footloose"), ['releasegroup:"Footloose"']);
+  assert.equal(searchQueries("A", 'Say "Hi"')[0], 'releasegroup:"Say \\"Hi\\"" AND artist:"A"');
+  const response = { "release-groups": [
+    { id: "single", score: 100, "primary-type": "Single" },
+    { id: "album", score: 98, "primary-type": "Album" },
+    { id: "weak", score: 50, "primary-type": "Album" },
+  ] };
+  assert.deepEqual(pickReleaseGroups(response, "LP"), ["album", "single"]);
+  assert.deepEqual(pickReleaseGroups(response, "12-inch single"), ["single", "album"]);
+  assert.deepEqual(pickReleaseGroups({}), []);
 });
