@@ -37,7 +37,11 @@ export function searchQueries(artist, title) {
     : NO_ARTIST.has(name) ? "" : ` AND artist:${quote(artist)}`;
   const bare = title.replace(/\s*[([][^)\]]*[)\]]\s*/g, " ").replace(/\s+/g, " ").trim();
   const words = bare.replace(/[^\p{L}\p{N}\s]/gu, " ").split(/\s+/).filter(Boolean);
+  const aside = title.match(/[([]([^)\]]+)[)\]]/)?.[1].trim();
   const queries = [`releasegroup:${quote(title)}${who}`];
+  // MusicBrainz tells same-named albums apart with a note, e.g. Weezer's
+  // "Weezer" albums are noted "Green Album", "Blue Album"...
+  if (aside && bare) queries.push(`releasegroup:${quote(bare)} AND comment:${quote(aside)}${who}`);
   if (bare && bare !== title) queries.push(`releasegroup:${quote(bare)}${who}`);
   if (words.length > 1) queries.push(`releasegroup:(${words.join(" ")})${who}`);
   return queries;

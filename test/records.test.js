@@ -99,8 +99,9 @@ test("coverSlug makes file-safe names with the same matching rules as recordKey"
 test("cover lookup tries exact, trimmed and loose searches, preferring the right type", async () => {
   const { searchQueries, pickReleaseGroups } = await import("../scripts/fetch-covers.js");
   assert.deepEqual(searchQueries("Fleetwood Mac", "Rumours"), ['releasegroup:"Rumours" AND artist:"Fleetwood Mac"']);
-  assert.deepEqual(searchQueries("Weezer", "Weezer (Blue Album)"), [
-    'releasegroup:"Weezer (Blue Album)" AND artist:"Weezer"',
+  assert.deepEqual(searchQueries("Weezer", "Weezer (Green Album)"), [
+    'releasegroup:"Weezer (Green Album)" AND artist:"Weezer"',
+    'releasegroup:"Weezer" AND comment:"Green Album" AND artist:"Weezer"',
     'releasegroup:"Weezer" AND artist:"Weezer"',
   ]);
   assert.deepEqual(searchQueries("Eagles", "Eagles Greatest Hits Volume 2").at(-1), 'releasegroup:(Eagles Greatest Hits Volume 2) AND artist:"Eagles"');
