@@ -10,6 +10,7 @@
     "camera": "node scripts/camera.js",
     "covers": "node scripts/fetch-covers.js",
     "cover": "node scripts/set-cover.js",
+    "find-releases": "node scripts/find-releases.js",
     "test": "node --test"
   },
   "engines": {
