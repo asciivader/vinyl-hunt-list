@@ -69,7 +69,9 @@ export function pickReleaseGroups(response, format = "", year = "") {
 const matchedWith = (artist, title) => `${MATCHER_VERSION}|${searchQueries(artist, title)[0]}`;
 // A "not found" is retried early when the record's details change (a year
 // filled in, or the record since added to MusicBrainz and its row touched).
-const missedWith = (r) => `${matchedWith(r.artist, r.title)}|${r.format}|${r.year}`;
+// Bump MISS_RULES when what counts as "not found" changes, to retry them all.
+const MISS_RULES = 2;
+const missedWith = (r) => `${MISS_RULES}|${matchedWith(r.artist, r.title)}|${r.format}|${r.year}`;
 
 // fetch, retrying a couple of times when the service says it's busy (503)
 // or has a hiccup, backing off each time.
@@ -93,6 +95,9 @@ async function findCover(r) {
       tried.add(id);
       const art = await politeFetch(`https://coverartarchive.org/release-group/${id}/front-500`, { "User-Agent": USER_AGENT });
       if (art.ok) return Buffer.from(await art.arrayBuffer());
+      // A new upload is redirected to archive.org before its sizes exist
+      // there: not "no cover", just not ready yet, so retry next publish.
+      if (art.status === 404 && art.redirected) throw new Error("new cover still processing at the Cover Art Archive");
       if (art.status !== 404) throw new Error(`Cover Art Archive ${art.status}`);
     }
   }
