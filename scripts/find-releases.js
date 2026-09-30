@@ -29,17 +29,37 @@ if (!artist || !title) {
   process.exit(1);
 }
 
-const query = `release:${quote(title)} AND artist:${quote(artist)}`;
-const found = await getJson(`https://musicbrainz.org/ws/2/release/?fmt=json&limit=100&query=${encodeURIComponent(query)}`);
-const releases = (found?.releases ?? [])
-  .filter((r) => Number(r.score) >= 90)
+// Find the album's release group the same way covers are matched, then list
+// every release in it (a name search misses many pressings).
+const { searchQueries, pickReleaseGroups } = await import("./fetch-covers.js");
+let groupId = null;
+for (const q of searchQueries(artist, title)) {
+  await sleep(1100);
+  const res = await getJson(`https://musicbrainz.org/ws/2/release-group/?fmt=json&limit=5&query=${encodeURIComponent(q)}`);
+  groupId = pickReleaseGroups(res)[0];
+  if (groupId) break;
+}
+if (!groupId) {
+  console.log(`No MusicBrainz album found for ${artist} – ${title}.`);
+  if (process.env.GITHUB_ACTIONS) console.log(`::notice title=Releases::No MusicBrainz album found for ${artist} – ${title}.`);
+  process.exit(0);
+}
+const all = [];
+for (let offset = 0; ; offset += 100) {
+  await sleep(1100);
+  const page = await getJson(`https://musicbrainz.org/ws/2/release?release-group=${groupId}&inc=labels+media&fmt=json&limit=100&offset=${offset}`);
+  all.push(...(page?.releases ?? []));
+  if (!page || all.length >= page["release-count"] || !page.releases.length) break;
+}
+const releases = all
   .map((r) => ({
     id: r.id,
-    date: r.date ?? "????",
+    date: r.date || "????",
     country: r.country ?? "",
     format: [...new Set((r.media ?? []).map((m) => m.format).filter(Boolean))].join(" + "),
     label: (r["label-info"] ?? []).map((l) => [l.label?.name, l["catalog-number"]].filter(Boolean).join(" ")).join("; "),
     note: r.disambiguation ?? "",
+    hasArt: r["cover-art-archive"]?.front !== false,
   }))
   .filter((r) => !vinylOnly || /vinyl/i.test(r.format))
   .sort((a, b) => a.date.localeCompare(b.date));
@@ -47,13 +67,13 @@ const releases = (found?.releases ?? [])
 const lines = [];
 for (const r of releases) {
   await sleep(400);
-  const art = await getJson(`https://coverartarchive.org/release/${r.id}`).catch(() => null);
+  const art = r.hasArt ? await getJson(`https://coverartarchive.org/release/${r.id}`).catch(() => null) : null;
   const images = (art?.images ?? []).filter((i) => i.front || i.types?.includes("Front"));
   const pics = images.length ? images.map((i) => `image ${i.id}${i.comment ? ` "${i.comment}"` : ""}`).join(", ") : "no cover art";
   lines.push(`${r.date} ${r.country} ${r.format} | ${r.label}${r.note ? ` (${r.note})` : ""} | release ${r.id} | ${pics}`);
 }
 
-console.log(`${artist} – ${title}: ${lines.length} releases${vinylOnly ? " on vinyl" : ""}`);
+console.log(`${artist} – ${title} (release group ${groupId}): ${lines.length} releases${vinylOnly ? " on vinyl" : ""}`);
 for (const l of lines) console.log(l);
 if (process.env.GITHUB_ACTIONS) {
   for (let i = 0; i < lines.length; i += 12) {
