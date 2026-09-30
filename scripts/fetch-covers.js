@@ -67,6 +67,9 @@ export function pickReleaseGroups(response, format = "", year = "") {
 // Each downloaded cover remembers the rules and search that found it, so it
 // is fetched again when either changes (better rules, a corrected title).
 const matchedWith = (artist, title) => `${MATCHER_VERSION}|${searchQueries(artist, title)[0]}`;
+// A "not found" is retried early when the record's details change (a year
+// filled in, or the record since added to MusicBrainz and its row touched).
+const missedWith = (r) => `${matchedWith(r.artist, r.title)}|${r.format}|${r.year}`;
 
 // fetch, retrying a couple of times when the service says it's busy (503)
 // or has a hiccup, backing off each time.
@@ -109,6 +112,7 @@ async function main() {
   const missesFile = new URL("misses.json", cacheDir);
   const saved = await readFile(missesFile, "utf8").then(JSON.parse, () => ({}));
   const misses = saved.version === MATCHER_VERSION ? saved.misses : {};
+  const missDetails = saved.version === MATCHER_VERSION ? saved.details ?? {} : {};
   const foundFile = new URL("found.json", cacheDir);
   const foundWith = await readFile(foundFile, "utf8").then(JSON.parse, () => ({}));
   const today = new Date().toISOString().slice(0, 10);
@@ -123,7 +127,7 @@ async function main() {
     seen.add(slug);
     if (await exists(new URL(`../covers/${slug}.jpg`, import.meta.url))) continue; // own photo
     if (await exists(new URL(`${slug}.jpg`, cacheDir)) && foundWith[slug] === matchedWith(r.artist, r.title)) continue;
-    if (misses[slug] && !stale(misses[slug])) continue;
+    if (misses[slug] && !stale(misses[slug]) && missDetails[slug] === missedWith(r)) continue;
     todo.push({ ...r, slug });
   }
 
@@ -135,6 +139,7 @@ async function main() {
       if (!cover) {
         await rm(new URL(`${r.slug}.jpg`, cacheDir), { force: true });
         misses[r.slug] = today;
+        missDetails[r.slug] = missedWith(r);
         missed++;
         console.log(`  no cover: ${r.artist} – ${r.title}`);
         continue;
@@ -142,6 +147,7 @@ async function main() {
       await writeFile(new URL(`${r.slug}.jpg`, cacheDir), cover);
       foundWith[r.slug] = matchedWith(r.artist, r.title);
       delete misses[r.slug];
+      delete missDetails[r.slug];
       found++;
       console.log(`  cover: ${r.artist} – ${r.title}`);
     } catch (err) {
@@ -174,7 +180,7 @@ async function main() {
     }
   }
 
-  await writeFile(missesFile, JSON.stringify({ version: MATCHER_VERSION, misses }, null, 1) + "\n");
+  await writeFile(missesFile, JSON.stringify({ version: MATCHER_VERSION, misses, details: missDetails }, null, 1) + "\n");
   await writeFile(foundFile, JSON.stringify(foundWith, null, 1) + "\n");
   const left = Math.max(0, todo.length - limit);
   const summary = `${found} downloaded, ${missed} not found, ${failed} errors${left ? `, ${left} left for next run` : ""}`;
