@@ -32,6 +32,31 @@ export function editionCoverSlug(artist, title, notes) {
   return edition ? `${coverSlug(artist, title)}--${edition}` : coverSlug(artist, title);
 }
 
+// data/edition-covers.csv picks a Cover Art Archive image for one copy, when
+// the record's usual cover is the wrong artwork for it (a reissue with a
+// different sleeve). `release` is a MusicBrainz release ID; `image` is one of
+// its image IDs, or empty for that release's front cover.
+export const EDITION_COVER_COLUMNS = ["artist", "title", "notes", "release", "image"];
+export const editionCoverUrl = (e) => `https://coverartarchive.org/release/${e.release}/${e.image || "front"}-500`;
+
+export function validateEditionCovers(rows, columns, collection) {
+  const errors = [];
+  if (columns.join(",") !== EDITION_COVER_COLUMNS.join(",")) {
+    return [`edition-covers.csv: header must be exactly "${EDITION_COVER_COLUMNS.join(",")}" (found "${columns.join(",")}")`];
+  }
+  const copies = new Set(collection.map((r) => editionCoverSlug(r.artist, r.title, r.notes)));
+  rows.forEach((e, i) => {
+    const line = `edition-covers.csv line ${i + 2}`;
+    if (!e.notes) errors.push(`${line}: notes must name the copy (its notes in collection.csv)`);
+    else if (!copies.has(editionCoverSlug(e.artist, e.title, e.notes))) {
+      errors.push(`${line}: no copy of ${e.artist} – ${e.title} with notes "${e.notes}" in collection.csv`);
+    }
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(e.release)) errors.push(`${line}: release should be a MusicBrainz release ID`);
+    if (e.image && !/^\d+$/.test(e.image)) errors.push(`${line}: image should be a Cover Art Archive image number or empty`);
+  });
+  return errors;
+}
+
 // Artist order everywhere on the site: alphabetical, ignoring a leading "The"
 // (The Clash files under C), accents and case.
 const artistCollator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });

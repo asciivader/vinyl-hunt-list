@@ -10,7 +10,7 @@ import { readFile, writeFile, mkdir, access, rm } from "node:fs/promises";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { parseCsvObjects } from "../src/csv.js";
-import { coverSlug } from "../src/records.js";
+import { coverSlug, editionCoverSlug, editionCoverUrl } from "../src/records.js";
 
 const USER_AGENT = "vinyl-hunt-list/1.0 (https://github.com/asciivader/vinyl-hunt-list)";
 const RETRY_MISSES_AFTER_DAYS = 30;
@@ -151,6 +151,29 @@ async function main() {
       console.log(`  error (will retry): ${r.artist} – ${r.title}: ${err.message}`);
     }
   }
+  // Covers picked for one copy in data/edition-covers.csv, fetched again
+  // when the pick changes.
+  const editions = await readFile(new URL("../data/edition-covers.csv", import.meta.url), "utf8")
+    .then((text) => parseCsvObjects(text).rows, () => []);
+  for (const e of editions) {
+    const slug = editionCoverSlug(e.artist, e.title, e.notes);
+    const url = editionCoverUrl(e);
+    if (await exists(new URL(`../covers/${slug}.jpg`, import.meta.url))) continue; // own photo
+    if (await exists(new URL(`${slug}.jpg`, cacheDir)) && foundWith[slug] === url) continue;
+    try {
+      const art = await politeFetch(url, { "User-Agent": USER_AGENT });
+      if (!art.ok) throw new Error(`Cover Art Archive ${art.status}`);
+      await writeFile(new URL(`${slug}.jpg`, cacheDir), Buffer.from(await art.arrayBuffer()));
+      foundWith[slug] = url;
+      found++;
+      console.log(`  cover: ${e.artist} – ${e.title} (${e.notes})`);
+    } catch (err) {
+      failed++;
+      failedNames.push(`${e.artist} – ${e.title} (${e.notes}): ${err.message}`);
+      console.log(`  error (will retry): ${e.artist} – ${e.title} (${e.notes}): ${err.message}`);
+    }
+  }
+
   await writeFile(missesFile, JSON.stringify({ version: MATCHER_VERSION, misses }, null, 1) + "\n");
   await writeFile(foundFile, JSON.stringify(foundWith, null, 1) + "\n");
   const left = Math.max(0, todo.length - limit);

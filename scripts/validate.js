@@ -3,13 +3,14 @@
 
 import { readFile } from "node:fs/promises";
 import { parseCsvObjects } from "../src/csv.js";
-import { validateData } from "../src/records.js";
+import { validateData, validateEditionCovers } from "../src/records.js";
 
 const read = (name) => readFile(new URL(`../data/${name}`, import.meta.url), "utf8");
 
 const wants = parseCsvObjects(await read("wants.csv"));
 const collection = parseCsvObjects(await read("collection.csv"));
 const layout = JSON.parse(await read("layout.json"));
+const editionCovers = await read("edition-covers.csv").then(parseCsvObjects, () => null);
 
 const errors = validateData({
   wants: wants.rows,
@@ -18,6 +19,7 @@ const errors = validateData({
   collectionColumns: collection.columns,
   layout,
 });
+if (editionCovers) errors.push(...validateEditionCovers(editionCovers.rows, editionCovers.columns, collection.rows));
 
 if (errors.length) {
   console.error(`Found ${errors.length} problem(s):`);
