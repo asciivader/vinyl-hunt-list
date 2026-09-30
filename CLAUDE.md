@@ -55,13 +55,14 @@ Common owner requests:
   cover then applies to that copy only (`editionCoverSlug`). Changing that
   row's notes later means renaming its cover file to match.
 
-- "Copy X should show a different cover" (a reissue with another sleeve):
-  prefer an archive image over a photo. Find a MusicBrainz release with that
-  artwork and add a row to `data/edition-covers.csv`
-  (`artist,title,notes,release,image`): `notes` names the copy as in
-  `collection.csv`, `release` is the release ID, `image` a Cover Art Archive
-  image ID from that release (empty = its front). Publishing downloads it as
-  that copy's edition cover.
+- "X shows the wrong cover" or "copy X should show a different cover" (a
+  reissue with another sleeve): prefer an archive image over a photo. Find a
+  MusicBrainz release with that artwork and add a row to
+  `data/edition-covers.csv` (`artist,title,notes,release,image`): `notes`
+  names the copy as in `collection.csv`, or is empty for the whole record;
+  `release` is the release ID, `image` a Cover Art Archive image ID from
+  that release (empty = its front). Publishing downloads it in place of the
+  automatic match.
 
 Covers: the collection shows a cover for each record. Downloaded ones come
 from the Cover Art Archive (via MusicBrainz) during publishing and are cached

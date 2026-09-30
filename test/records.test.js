@@ -139,6 +139,8 @@ test("validateEditionCovers checks the copy exists and the IDs look right", asyn
   const good = { artist: "Guns N Roses", title: "Appetite For Destruction", notes: "Reissue", release: "47b74704-2833-4c3c-ba8a-6f7bb12074c2", image: "20908792093" };
   assert.deepEqual(validateEditionCovers([good], EDITION_COVER_COLUMNS, collection), []);
   assert.equal(validateEditionCovers([{ ...good, notes: "picture disc" }], EDITION_COVER_COLUMNS, collection).length, 1);
+  assert.deepEqual(validateEditionCovers([{ ...good, notes: "" }], EDITION_COVER_COLUMNS, collection), []); // whole record
+  assert.equal(validateEditionCovers([{ ...good, title: "Lies", notes: "" }], EDITION_COVER_COLUMNS, collection).length, 1);
   assert.equal(validateEditionCovers([{ ...good, release: "nope", image: "x" }], EDITION_COVER_COLUMNS, collection).length, 2);
   assert.equal(editionCoverUrl(good), "https://coverartarchive.org/release/47b74704-2833-4c3c-ba8a-6f7bb12074c2/20908792093-500");
   assert.equal(editionCoverUrl({ ...good, image: "" }), "https://coverartarchive.org/release/47b74704-2833-4c3c-ba8a-6f7bb12074c2/front-500");

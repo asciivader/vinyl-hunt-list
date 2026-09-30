@@ -124,12 +124,18 @@ async function main() {
   const stale = (date) => (Date.parse(today) - Date.parse(date)) / 864e5 >= RETRY_MISSES_AFTER_DAYS;
 
   const { rows } = parseCsvObjects(await readFile(new URL("../data/collection.csv", import.meta.url), "utf8"));
+  // Covers picked in data/edition-covers.csv: one copy's (by its notes), or
+  // with empty notes the whole record's, replacing the automatic match.
+  const editions = await readFile(new URL("../data/edition-covers.csv", import.meta.url), "utf8")
+    .then((text) => parseCsvObjects(text).rows, () => []);
+  const picked = new Set(editions.map((e) => editionCoverSlug(e.artist, e.title, e.notes)));
   const todo = [];
   const seen = new Set();
   for (const r of rows) {
     const slug = coverSlug(r.artist, r.title);
     if (seen.has(slug)) continue;
     seen.add(slug);
+    if (picked.has(slug)) continue;
     if (await exists(new URL(`../covers/${slug}.jpg`, import.meta.url))) continue; // own photo
     if (await exists(new URL(`${slug}.jpg`, cacheDir)) && foundWith[slug] === matchedWith(r.artist, r.title)) continue;
     if (misses[slug] && !stale(misses[slug]) && missDetails[slug] === missedWith(r)) continue;
@@ -162,13 +168,11 @@ async function main() {
       console.log(`  error (will retry): ${r.artist} – ${r.title}: ${err.message}`);
     }
   }
-  // Covers picked for one copy in data/edition-covers.csv, fetched again
-  // when the pick changes.
-  const editions = await readFile(new URL("../data/edition-covers.csv", import.meta.url), "utf8")
-    .then((text) => parseCsvObjects(text).rows, () => []);
+  // Picked covers are fetched again when the pick changes.
   for (const e of editions) {
     const slug = editionCoverSlug(e.artist, e.title, e.notes);
     const url = editionCoverUrl(e);
+    const name = `${e.artist} – ${e.title}${e.notes ? ` (${e.notes})` : ""}`;
     if (await exists(new URL(`../covers/${slug}.jpg`, import.meta.url))) continue; // own photo
     if (await exists(new URL(`${slug}.jpg`, cacheDir)) && foundWith[slug] === url) continue;
     try {
@@ -177,11 +181,11 @@ async function main() {
       await writeFile(new URL(`${slug}.jpg`, cacheDir), Buffer.from(await art.arrayBuffer()));
       foundWith[slug] = url;
       found++;
-      console.log(`  cover: ${e.artist} – ${e.title} (${e.notes})`);
+      console.log(`  cover: ${name}`);
     } catch (err) {
       failed++;
-      failedNames.push(`${e.artist} – ${e.title} (${e.notes}): ${err.message}`);
-      console.log(`  error (will retry): ${e.artist} – ${e.title} (${e.notes}): ${err.message}`);
+      failedNames.push(`${name}: ${err.message}`);
+      console.log(`  error (will retry): ${name}: ${err.message}`);
     }
   }
 
